@@ -1,10 +1,20 @@
 import React, { useState } from 'react';
-import { Bot, LogOut, ShieldAlert, Users, Calendar, Edit2, Trash2, Plus } from 'lucide-react';
+import { Bot, LogOut, ShieldAlert, Users, Calendar } from 'lucide-react';
 import { UserRole } from '../types';
-import { CustomizeChatbot } from './staff/CustomizeChatbot';
-import { ChatHistory } from './staff/ChatHistory';
-import { SubmitFeedback } from './staff/SubmitFeedback';
-import { ManageAccount } from './staff/ManageAccount';
+
+// Staff Components
+import { CustomizeChatbot as StaffCustomize } from './staff/CustomizeChatbot';
+import { ChatHistory as StaffHistory } from './staff/ChatHistory';
+import { SubmitFeedback as StaffFeedback } from './staff/SubmitFeedback';
+import { ManageAccount as StaffAccount } from './staff/ManageAccount';
+
+// Organisational Admin Components
+import { BuildChatbot } from './organisational-admin/BuildChatbot';
+import { ManageStaff } from './organisational-admin/ManageStaff';
+import { CustomizeChatbot as AdminCustomize } from './organisational-admin/CustomizeChatbot';
+import { ViewChatHistory as AdminHistory } from './organisational-admin/ViewChatHistory';
+import { SubmitFeedback as AdminFeedback } from './organisational-admin/SubmitFeedback';
+import { ManageAccount as AdminAccount } from './organisational-admin/ManageAccount';
 
 interface DashboardProps {
   onLogout: () => void;
@@ -116,61 +126,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
     </div>
   );
 
-  const renderManageStaff = () => (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm animate-in fade-in duration-500">
-        <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50 rounded-t-xl">
-            <div>
-                <h3 className="text-lg font-bold text-gray-800">Staff Management</h3>
-                <p className="text-sm text-gray-500">Manage operator permissions and roles</p>
-            </div>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-blue-700 transition-colors">
-                <Plus className="w-4 h-4" /> Invite Staff
-            </button>
-        </div>
-        <div className="overflow-x-auto">
-            <table className="w-full text-left">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                        <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Staff Name</th>
-                        <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Email</th>
-                        <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Role</th>
-                        <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Status</th>
-                        <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                    <tr className="hover:bg-gray-50">
-                        <td className="px-6 py-4 font-medium text-gray-900">Sarah Jenkins</td>
-                        <td className="px-6 py-4 text-gray-600">sarah.j@company.com</td>
-                        <td className="px-6 py-4"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">Operator</span></td>
-                        <td className="px-6 py-4"><span className="text-green-600 text-xs font-bold bg-green-50 px-2 py-1 rounded">Active</span></td>
-                        <td className="px-6 py-4 text-right flex justify-end gap-3">
-                            <Edit2 className="w-4 h-4 text-gray-500 cursor-pointer hover:text-blue-600" />
-                            <Trash2 className="w-4 h-4 text-gray-500 cursor-pointer hover:text-red-600" />
-                        </td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                        <td className="px-6 py-4 font-medium text-gray-900">Mike Ross</td>
-                        <td className="px-6 py-4 text-gray-600">mike.r@company.com</td>
-                        <td className="px-6 py-4"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">Operator</span></td>
-                        <td className="px-6 py-4"><span className="text-gray-500 text-xs font-bold bg-gray-100 px-2 py-1 rounded">Inactive</span></td>
-                        <td className="px-6 py-4 text-right flex justify-end gap-3">
-                            <Edit2 className="w-4 h-4 text-gray-500 cursor-pointer hover:text-blue-600" />
-                            <Trash2 className="w-4 h-4 text-gray-500 cursor-pointer hover:text-red-600" />
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-  );
-
   const renderPlaceholder = (title: string) => (
     <div className="flex items-center justify-center h-96 bg-white border border-dashed border-gray-300 rounded-xl">
         <div className="text-center">
             <Bot className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-bold text-gray-400">{title} Interface</h3>
-            <p className="text-gray-400 text-sm">Coming soon for Organisational Admin</p>
+            <p className="text-gray-400 text-sm">Feature not available for current role.</p>
         </div>
     </div>
   );
@@ -313,31 +274,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
         {/* Content Body */}
         <main className="flex-1 overflow-y-auto p-8 bg-white">
             {activeTab === 'analytics' && renderAnalytics()}
-            {activeTab === 'staff' && renderManageStaff()}
-            {activeTab === 'build' && renderPlaceholder('Chatbot Builder')}
+
+            {/* Admin Specific Tabs */}
+            {activeTab === 'build' && currentRole === UserRole.ADMIN && (
+                <BuildChatbot onBack={() => setActiveTab('analytics')} onNavigateNext={() => setActiveTab('customise')} />
+            )}
+
+            {activeTab === 'staff' && currentRole === UserRole.ADMIN && (
+                <ManageStaff onBack={() => setActiveTab('analytics')} onCreateRole={() => {}} />
+            )}
             
+            {/* Shared Tabs (Customise) */}
             {activeTab === 'customise' && (
                 currentRole === UserRole.STAFF 
-                ? <CustomizeChatbot onBack={() => setActiveTab('analytics')} />
-                : renderPlaceholder('Customize Chatbot')
+                ? <StaffCustomize onBack={() => setActiveTab('analytics')} />
+                : <AdminCustomize onBack={() => setActiveTab('analytics')} />
             )}
             
+            {/* Shared Tabs (History) */}
             {activeTab === 'history' && (
                 currentRole === UserRole.STAFF
-                ? <ChatHistory onBack={() => setActiveTab('analytics')} />
-                : renderPlaceholder('Chat History')
+                ? <StaffHistory onBack={() => setActiveTab('analytics')} />
+                : <AdminHistory onBack={() => setActiveTab('analytics')} />
             )}
             
+            {/* Shared Tabs (Feedback) */}
             {activeTab === 'feedback' && (
                 currentRole === UserRole.STAFF
-                ? <SubmitFeedback onBack={() => setActiveTab('analytics')} />
-                : renderPlaceholder('Submit Feedback')
+                ? <StaffFeedback onBack={() => setActiveTab('analytics')} />
+                : <AdminFeedback onBack={() => setActiveTab('analytics')} />
             )}
             
+            {/* Shared Tabs (Account) */}
             {activeTab === 'account' && (
                 currentRole === UserRole.STAFF
-                ? <ManageAccount onBack={() => setActiveTab('analytics')} role={currentRole} />
-                : renderPlaceholder('Manage Account')
+                ? <StaffAccount onBack={() => setActiveTab('analytics')} role={currentRole} />
+                : <AdminAccount onBack={() => setActiveTab('analytics')} />
             )}
         </main>
       </div>
