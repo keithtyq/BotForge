@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Shield, Users, BarChart3, Lock, Settings, FileText, Cpu, MessageSquare, CreditCard, Layers } from 'lucide-react';
 import { AdminView } from '../SystemAdminDashboard';
@@ -59,7 +60,7 @@ export const AdminHome: React.FC<AdminHomeProps> = ({ onViewChange }) => {
       hover: "group-hover:bg-gray-100"
     },
     {
-      title: "Manage Feedback",
+      title: "Manage Testimonials",
       subtitle: "Inquiries & Testimonials",
       icon: <MessageSquare className="w-8 h-8 text-green-600" />,
       action: () => onViewChange('feedback'),
