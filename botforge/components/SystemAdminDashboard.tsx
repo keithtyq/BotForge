@@ -106,7 +106,7 @@ export const SystemAdminDashboard: React.FC<SystemAdminDashboardProps> = ({ onLo
                     onClick={() => setCurrentView('feedback')}
                     className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'feedback' ? 'bg-gray-100' : 'bg-white'}`}
                 >
-                    Manage Feedback
+                    Manage Testimonials
                 </button>
                 <button 
                     onClick={() => setCurrentView('features')}

@@ -10,7 +10,7 @@ export const FeedbackManagement: React.FC = () => {
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <Bot className="h-5 w-5 text-white" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900">Inquiry Form</h2>
+          <h2 className="text-xl font-bold text-gray-900">Manage Testimonials</h2>
         </div>
 
         <div className="flex border border-gray-300 rounded-lg min-h-[500px] overflow-hidden">
@@ -39,8 +39,9 @@ export const FeedbackManagement: React.FC = () => {
                 </div>
               </div>
               <div className="p-4 bg-gray-50 flex justify-end gap-3">
-                  <button className="text-red-600 font-bold text-sm px-4 py-2 hover:bg-red-50 rounded">Delete</button>
-                  <button className="bg-blue-600 text-white font-bold text-sm px-6 py-2 rounded hover:bg-blue-700">Reply</button>
+                  <button className="text-gray-600 font-bold text-sm px-4 py-2 hover:bg-gray-200 rounded transition-colors">Hide</button>
+                  <button className="text-red-600 font-bold text-sm px-4 py-2 hover:bg-red-50 rounded transition-colors">Delete</button>
+                  <button className="bg-blue-600 text-white font-bold text-sm px-6 py-2 rounded hover:bg-blue-700 transition-colors">Reply</button>
               </div>
           </div>
         </div>

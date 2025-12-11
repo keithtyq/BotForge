@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Bot, LogOut, ShieldAlert, Users, Calendar, CreditCard } from 'lucide-react';
 import { UserRole } from '../types';
@@ -15,6 +16,7 @@ import { CustomizeChatbot as AdminCustomize } from './organisational-admin/Custo
 import { ViewChatHistory as AdminHistory } from './organisational-admin/ViewChatHistory';
 import { SubmitFeedback as AdminFeedback } from './organisational-admin/SubmitFeedback';
 import { ManageAccount as AdminAccount } from './organisational-admin/ManageAccount';
+import { Notifications } from './organisational-admin/Notifications';
 
 // Shared Components
 import { Payment } from './Payment';
@@ -210,7 +212,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
             </div>
 
             <div className="flex items-center gap-6">
-                <div className="relative">
+                <div 
+                    className="relative cursor-pointer"
+                    onClick={() => setActiveTab('notifications')}
+                >
                     <span className="absolute top-0 right-0 block h-2 w-2 rounded-full ring-2 ring-white bg-red-400"></span>
                     <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                 </div>
@@ -229,8 +234,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
             </div>
         </header>
 
-        {/* Navigation Tabs (Pills) - Only show if NOT in Subscription mode */}
-        {activeTab !== 'subscription' && (
+        {/* Navigation Tabs (Pills) - Only show if NOT in Subscription or Notifications mode */}
+        {activeTab !== 'subscription' && activeTab !== 'notifications' && (
             <div className="px-8 py-6 pb-0 bg-white flex-shrink-0">
                 <div className="flex flex-wrap gap-3">
                     {currentRole === UserRole.ADMIN && (
@@ -287,6 +292,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
         {/* Content Body */}
         <main className="flex-1 overflow-y-auto p-8 bg-white">
             {activeTab === 'analytics' && renderAnalytics()}
+
+            {/* Notifications Tab */}
+            {activeTab === 'notifications' && (
+                <Notifications onBack={() => setActiveTab('analytics')} />
+            )}
 
             {/* Subscription Tab (Admin Only) */}
             {activeTab === 'subscription' && currentRole === UserRole.ADMIN && (
