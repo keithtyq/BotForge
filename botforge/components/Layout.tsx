@@ -10,17 +10,29 @@ interface LayoutProps {
   onLogout: () => void;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ 
-  children, 
-  setCurrentPage, 
-  currentPage, 
+export const Layout: React.FC<LayoutProps> = ({
+  children,
+  setCurrentPage,
+  currentPage,
   isLoggedIn,
   onLogout
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const navClass = (page: PageView) => 
+  const navClass = (page: PageView) =>
     `cursor-pointer hover:text-blue-600 transition-colors ${currentPage === page ? 'text-blue-600 font-semibold' : 'text-gray-600'}`;
+
+  const handleNavClick = (id: string) => {
+    if (currentPage === PageView.LANDING) {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      setCurrentPage(PageView.LANDING);
+      setTimeout(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+    setIsMenuOpen(false);
+  };
 
   // If inside dashboard, we might use a different layout, but for now we wrap everything
   if (currentPage === PageView.DASHBOARD) {
@@ -34,8 +46,8 @@ export const Layout: React.FC<LayoutProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             {/* Logo */}
-            <div 
-              className="flex items-center gap-2 cursor-pointer" 
+            <div
+              className="flex items-center gap-2 cursor-pointer"
               onClick={() => setCurrentPage(PageView.LANDING)}
             >
               <div className="bg-blue-600 p-1.5 rounded-lg">
@@ -46,19 +58,20 @@ export const Layout: React.FC<LayoutProps> = ({
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center space-x-8">
+              <span className="cursor-pointer hover:text-blue-600 text-gray-600 transition-colors" onClick={() => handleNavClick('features')}>Features</span>
+              <span className="cursor-pointer hover:text-blue-600 text-gray-600 transition-colors" onClick={() => handleNavClick('testimonials')}>Testimonials</span>
               <span className={navClass(PageView.PRICING)} onClick={() => setCurrentPage(PageView.PRICING)}>Pricing</span>
               <span className={navClass(PageView.FAQ)} onClick={() => setCurrentPage(PageView.FAQ)}>FAQ</span>
-              <span className="cursor-pointer hover:text-blue-600 text-gray-600">Contact</span>
-              
+
               {!isLoggedIn ? (
-                <button 
+                <button
                   onClick={() => setCurrentPage(PageView.LOGIN)}
                   className="text-gray-900 font-medium hover:text-blue-600"
                 >
                   Login
                 </button>
               ) : (
-                <button 
+                <button
                   onClick={onLogout}
                   className="text-gray-900 font-medium hover:text-blue-600"
                 >
@@ -79,9 +92,10 @@ export const Layout: React.FC<LayoutProps> = ({
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden border-t border-gray-100 bg-white py-4 px-4 space-y-4">
+            <div className="block py-2 text-gray-600" onClick={() => handleNavClick('features')}>Features</div>
+            <div className="block py-2 text-gray-600" onClick={() => handleNavClick('testimonials')}>Testimonials</div>
             <div className="block py-2 text-gray-600" onClick={() => { setCurrentPage(PageView.PRICING); setIsMenuOpen(false); }}>Pricing</div>
             <div className="block py-2 text-gray-600" onClick={() => { setCurrentPage(PageView.FAQ); setIsMenuOpen(false); }}>FAQ</div>
-            <div className="block py-2 text-gray-600">Contact</div>
             <div className="block py-2 font-medium text-blue-600" onClick={() => { setCurrentPage(PageView.LOGIN); setIsMenuOpen(false); }}>Login</div>
           </div>
         )}
