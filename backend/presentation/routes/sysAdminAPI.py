@@ -25,7 +25,6 @@ def list_feedback_candidates():
             "sender_id": fb.sender_id,
             "sender_username": sender.username if sender else None,
             "sender_role_id": sender.role_id if sender else None,
-            "receiver_id": fb.receiver_id,
             "rating": fb.rating,
             "title": fb.title,
             "content": fb.content,
