@@ -14,8 +14,8 @@ DROP TABLE IF EXISTS subscription CASCADE;
 DROP TABLE IF EXISTS role CASCADE;
 
 CREATE TABLE role (
-    role_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
+    role_id INT PRIMARY KEY, -- 0: SYS_ADMIN, 1: ORG_ADMIN, 2: OPERATOR
+    name VARCHAR(50) NOT NULL UNIQUE,
     description VARCHAR(255)
 );
 
@@ -23,6 +23,7 @@ CREATE TABLE subscription (
     subscription_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
     price NUMERIC(10,2) NOT NULL,
+    status SMALLINT NOT NULL DEFAULT 0, --  0: active, 1: inactive
     description VARCHAR(255)
 );
 
@@ -58,9 +59,9 @@ CREATE TABLE personality (
 
 CREATE TABLE app_user (
     user_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    username VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    email VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
     status BOOLEAN DEFAULT FALSE,
     role_id INT NOT NULL,
     organisation_id INT,
@@ -80,12 +81,37 @@ CREATE TABLE invitation (
     FOREIGN KEY (invited_by_user_id) REFERENCES app_user(user_id)
 );
 
+CREATE TABLE faq (
+    faq_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    question VARCHAR(255) NOT NULL,
+    answer TEXT NOT NULL,
+    status SMALLINT NOT NULL DEFAULT 0, -- 0: active, 1: inactive
+    display_order INT NOT NULL DEFAULT 0,
+    user_id INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+);
+
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_faq_updated_at
+BEFORE UPDATE ON faq
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TABLE notification (
     message_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     title VARCHAR(100) NOT NULL,
     content TEXT NOT NULL,
-    creation_date TIMESTAMP NOT NULL,
+    creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     is_read BOOLEAN DEFAULT FALSE,
     user_id INT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES app_user(user_id)
@@ -94,20 +120,19 @@ CREATE TABLE notification (
 CREATE TABLE feedback (
     feedback_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     sender_id INT NOT NULL,
-    receiver_id INT NOT NULL,
     title VARCHAR(100),
     rating INT,
     content TEXT,
-    creation_date TIMESTAMP NOT NULL,
-    FOREIGN KEY (sender_id) REFERENCES app_user(user_id),
-    FOREIGN KEY (receiver_id) REFERENCES app_user(user_id)
+    creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_testimonial BOOLEAN NOT NULL DEFAULT FALSE,
+    FOREIGN KEY (sender_id) REFERENCES app_user(user_id)
 );
 
 CREATE TABLE chatbot (
     bot_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
     description VARCHAR(255),
-    creation_date TIMESTAMP NOT NULL,
+    creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     organisation_id INT NOT NULL,
     personality_id INT,
     FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id),
@@ -123,5 +148,6 @@ CREATE TABLE analytics (
     user_satisfaction REAL DEFAULT 0,
     peak_hour INT,
     top_intents TEXT,
-    FOREIGN KEY (bot_id) REFERENCES chatbot(bot_id)
+    FOREIGN KEY (bot_id) REFERENCES chatbot(bot_id),
+    UNIQUE (bot_id, date)
 );

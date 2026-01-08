@@ -1,3 +1,5 @@
+# createTables from schema. Drops all tables and recreates them.
+
 import psycopg2
 import os
 from pathlib import Path
