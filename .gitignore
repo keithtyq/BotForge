@@ -8,3 +8,5 @@ env/
 # python
 __pycache__/ 
 *.log
+
+tests/

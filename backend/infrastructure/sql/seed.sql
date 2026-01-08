@@ -17,16 +17,16 @@ TRUNCATE TABLE
 RESTART IDENTITY CASCADE;
 
 -- Insert roles
-INSERT INTO role (name, description) VALUES
-('Admin', 'Administrator'),
-('User', 'Regular staff'),
-('Manager', 'Manages team');
+INSERT INTO role (role_id, name, description) VALUES
+(0, 'SYS_ADMIN', 'System administrator with full platform access'),
+(1, 'ORG_ADMIN', 'Organisation administrator'),
+(2, 'OPERATOR', 'Organisation operator');
 
 -- Insert subscriptions
-INSERT INTO subscription (name, price, description) VALUES
-('Basic', 10.00, 'Basic subscription'),
-('Pro', 25.50, 'Professional subscription'),
-('Enterprise', 100.00, 'Enterprise level subscription');
+INSERT INTO subscription (name, price, status, description) VALUES
+('Standard', 10.00, 0, '300 conversations/month. Best for small teams or startups. Covers essential chatbot features.'),
+('Pro', 25.00, 0, '1500 conversations/month. Ideal for growing businesses. Includes enhanced analytics.'),
+('Deluxe', 50.00, 0, '5000 conversations/month. Designed for large organizations. Full access to premium & enterprise features.');
 
 -- Insert features
 INSERT INTO feature (name, description) VALUES
@@ -47,7 +47,7 @@ INSERT INTO subscription_features (subscription_id, feature_id) VALUES
 
 -- Insert organisations
 INSERT INTO organisation (name, industry, size, subscription_id) VALUES
-('E-commercing', 'E-commerce', 'Large', 3),
+('Fish & Burgs', 'F&B', 'Small', 3),
 ('Retailers', 'Retail', 'Medium', 2),
 ('Edu', 'Education', 'Small', 1);
 
@@ -59,64 +59,36 @@ INSERT INTO personality (name, description, type) VALUES
 
 -- Insert users
 INSERT INTO app_user (
-  username,
-  password,
-  email,
-  status,
-  role_id,
-  organisation_id
+  username, password, email, status, role_id, organisation_id
 ) VALUES
-('alice', 'pw123', 'alice@test.com', TRUE, 1, 1),
-('bob', 'pw123', 'bob@test.com', FALSE, 2, 2),
-('carol', 'pw123', 'carol@test.com', TRUE, 3, 3);
+('Admin', 'pw123', 'admin@test.com', TRUE, 0, NULL),
+('bob', 'pw123', 'bob@test.com', FALSE, 1, 2),
+('carol', 'pw123', 'carol@test.com', TRUE, 2, 3);
+
+-- Insert FAQs (Top 5, direct replica from wireframe)
+INSERT INTO faq (question, answer, status, display_order, user_id) VALUES
+('How does the conversation limit work?', 'Each subscription plan has a monthly conversation limit...', 0, 1, 1),
+('Do I need technical knowledge to build a chatbot?', 'No technical knowledge is required...', 0, 2, 1),
+('Can I customize the chatbot to fit my company branding?', 'Yes, you can customize...', 0, 3, 1),
+('What integrations are supported?', 'The chatbot supports integrations...', 0, 4, 1),
+('Is my data secure?', 'We prioritize data security...', 0, 5, 1);
 
 -- Insert notifications
-INSERT INTO notification (
-  title,
-  content,
-  creation_date,
-  is_read,
-  user_id
-) VALUES
+INSERT INTO notification (title, content, creation_date, is_read, user_id) VALUES
 ('Welcome!', 'Welcome to the platform, Alice.', CURRENT_TIMESTAMP, FALSE, 1),
 ('Reminder', 'Complete your profile, Bob.', CURRENT_TIMESTAMP, FALSE, 2);
 
 -- Insert feedback
-INSERT INTO feedback (
-  sender_id,
-  receiver_id,
-  title,
-  rating,
-  content,
-  creation_date
-) VALUES
-(1, 2, 'Outstanding Experience', 5,
- 'The chatbot delivered an excellent experience with accurate responses and great usability. Highly recommended.',
- CURRENT_TIMESTAMP),
-(3, 1, 'Reliable and Professional', 4,
- 'Alice consistently demonstrates professionalism and delivers quality work that adds real value to the team.',
- CURRENT_TIMESTAMP);
+INSERT INTO feedback (sender_id, title, rating, content) VALUES
+(1, 'Outstanding Experience', 5, 'The chatbot delivered an excellent experience with accurate responses and great usability. Highly recommended.'),
+(3, 'Reliable and Professional', 4, 'Alice consistently demonstrates professionalism and delivers quality work that adds real value to the team.');
 
 -- Insert chatbots
-INSERT INTO chatbot (
-  name,
-  description,
-  creation_date,
-  organisation_id,
-  personality_id
-) VALUES
+INSERT INTO chatbot (name, description, creation_date, organisation_id, personality_id) VALUES
 ('SupportBot', 'Helps with customer support', CURRENT_TIMESTAMP, 1, 1),
 ('EduBot', 'Helps with learning', CURRENT_TIMESTAMP, 3, 3);
 
 -- Insert analytics
-INSERT INTO analytics (
-  bot_id,
-  date,
-  total_messages,
-  avg_response_time,
-  user_satisfaction,
-  peak_hour,
-  top_intents
-) VALUES
+INSERT INTO analytics (bot_id, date, total_messages, avg_response_time, user_satisfaction, peak_hour, top_intents) VALUES
 (1, '2026-01-06', 150, 2.5, 4.8, 15, '["greeting","faq"]'),
 (2, '2026-01-06', 80, 3.2, 4.2, 10, '["lesson_query","quiz"]');
