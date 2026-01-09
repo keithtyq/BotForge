@@ -9,9 +9,31 @@ import { Dashboard } from './components/Dashboard';
 import { SystemAdminDashboard } from './components/SystemAdminDashboard';
 import { PageView } from './types';
 
+import { authService } from './api';
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageView>(PageView.LANDING);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+
+    if (token) {
+      // Remove token from URL so it doesn't persist
+      window.history.replaceState({}, '', window.location.pathname);
+
+      authService.verifyEmail(token).then((res) => {
+        if (res.ok) {
+          setCurrentPage(PageView.ACTIVATED);
+        } else {
+          // Handle error if needed, maybe show a toast or alert
+          console.error("Verification failed:", res.error);
+          setCurrentPage(PageView.LOGIN); // Or stay on landing?
+        }
+      });
+    }
+  }, []);
 
   const handleLoginSuccess = () => {
     setIsLoggedIn(true);
@@ -26,13 +48,13 @@ export default function App() {
   return (
     <>
       {currentPage === PageView.SYSTEM_ADMIN ? (
-        <SystemAdminDashboard 
-          onLogout={handleLogout} 
-          onBackToDashboard={() => setCurrentPage(PageView.DASHBOARD)} 
+        <SystemAdminDashboard
+          onLogout={handleLogout}
+          onBackToDashboard={() => setCurrentPage(PageView.DASHBOARD)}
         />
       ) : (
-        <Layout 
-          setCurrentPage={setCurrentPage} 
+        <Layout
+          setCurrentPage={setCurrentPage}
           currentPage={currentPage}
           isLoggedIn={isLoggedIn}
           onLogout={handleLogout}
@@ -40,23 +62,23 @@ export default function App() {
           {currentPage === PageView.LANDING && <LandingPage onNavigate={setCurrentPage} />}
           {currentPage === PageView.PRICING && <PricingPage onNavigate={setCurrentPage} />}
           {currentPage === PageView.FAQ && <FAQPage />}
-          
-          {(currentPage === PageView.LOGIN || 
-            currentPage === PageView.REGISTER || 
+
+          {(currentPage === PageView.LOGIN ||
+            currentPage === PageView.REGISTER ||
             currentPage === PageView.ACTIVATED) && (
-            <Auth 
-              view={currentPage} 
-              onNavigate={setCurrentPage} 
-              onLoginSuccess={handleLoginSuccess}
-            />
-          )}
+              <Auth
+                view={currentPage}
+                onNavigate={setCurrentPage}
+                onLoginSuccess={handleLoginSuccess}
+              />
+            )}
 
           {/* Payment page removed from here as it is now inside the Dashboard */}
-          
+
           {currentPage === PageView.DASHBOARD && isLoggedIn && (
-            <Dashboard 
-              onLogout={handleLogout} 
-              onSystemAdminLogin={() => setCurrentPage(PageView.SYSTEM_ADMIN)} 
+            <Dashboard
+              onLogout={handleLogout}
+              onSystemAdminLogin={() => setCurrentPage(PageView.SYSTEM_ADMIN)}
             />
           )}
         </Layout>
