@@ -4,8 +4,6 @@ from sqlalchemy import desc
 from backend.application.auth_service import (
     register_org_admin, confirm_email, login, update_org_profile
 )
-from backend.data_access.Subscriptions.subscriptions import SubscriptionRepository
-from backend.application.UnregisteredUsers.getActiveSubscriptions import GetActiveSubscriptions
 
 unregistered_bp = Blueprint("unregistered", __name__)
 

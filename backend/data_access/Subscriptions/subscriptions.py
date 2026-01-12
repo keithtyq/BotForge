@@ -7,8 +7,7 @@ class SubscriptionRepository:
     # for pricing section at landing page
     def get_active_subscriptions(self):
         """
-        Checks for subscriptions with status = 0 (active) and returns them ordered by price (asc), subscription_id (asc).
-        E.g.:
+        Returns active subscriptions ordered by price, then id.
         [(subscription_id, name, price, description), ...]
         """
         return (
@@ -25,3 +24,24 @@ class SubscriptionRepository:
             )
             .all()
         )
+
+    # for assigning subscription after registration
+    def get_active_by_id(self, subscription_id: int) -> Subscription | None:
+        """
+        Returns active Subscription ORM object by id.
+        """
+        return (
+            Subscription.query
+            .filter(
+                Subscription.subscription_id == subscription_id,
+                Subscription.status == 0
+            )
+            .first()
+        )
+
+    # generic fetch (admin / internal use)
+    def get_by_id(self, subscription_id: int) -> Subscription | None:
+        """
+        Returns Subscription ORM object by id (any status).
+        """
+        return Subscription.query.get(subscription_id)
