@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from backend.models import Organisation, Feedback, AppUser
+from backend.models import Organisation, Feedback, AppUser, FAQ
 from sqlalchemy import desc
 from backend.application.auth_service import (
     register_org_admin, confirm_email, login, update_org_profile
@@ -113,3 +113,23 @@ def get_testimonials():
     return jsonify({"ok": True, "testimonials": testimonials}), 200
 
 
+
+@unregistered_bp.get("/faq")
+def list_public_faq():
+    rows = (
+        FAQ.query
+        .filter(FAQ.status == 0)
+        .order_by(FAQ.display_order.asc(), FAQ.faq_id.asc())
+        .all()
+    )
+
+    return jsonify({
+        "ok": True,
+        "faqs": [
+            {
+                "faq_id": f.faq_id,
+                "question": f.question,
+                "answer": f.answer
+            } for f in rows
+        ]
+    }), 200
