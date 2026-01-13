@@ -45,3 +45,9 @@ export interface FAQ {
   status: number;
   display_order: number;
 }
+
+export interface Feature {
+  feature_id: number;
+  name: string;
+  description: string;
+}
