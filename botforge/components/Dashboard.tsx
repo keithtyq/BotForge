@@ -337,8 +337,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                     {/* Shared Tabs (Feedback) */}
                     {activeTab === 'feedback' && (
                         currentRole === UserRole.STAFF
-                            ? <StaffFeedback onBack={() => setActiveTab('analytics')} />
-                            : <AdminFeedback onBack={() => setActiveTab('analytics')} />
+                            ? <StaffFeedback onBack={() => setActiveTab('analytics')} user={user} />
+                            : <AdminFeedback onBack={() => setActiveTab('analytics')} user={user} />
                     )}
 
                     {/* Shared Tabs (Account) */}

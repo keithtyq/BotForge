@@ -131,5 +131,12 @@ export const sysAdminService = {
     async deleteFaq(faqId: number) {
         return api.delete<any>(`/api/sysadmin/faq/${faqId}`);
     }
+
+};
+
+export const feedbackService = {
+    async submitFeedback(data: { sender_id: number; title: string; rating: number; content: string }) {
+        return api.post<any>('/api/feedback', data);
+    }
 };
 
