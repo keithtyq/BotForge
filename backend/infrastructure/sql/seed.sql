@@ -111,7 +111,7 @@ INSERT INTO notification (title, content, is_read, user_id) VALUES
 ('Welcome!', 'Welcome to the platform, Admin.', FALSE, 1),
 ('Reminder', 'Complete your profile, Bob.', FALSE, 2);
 
-INSERT INTO feedback (sender_id, title, rating, content) VALUES
+INSERT INTO feedback (sender_id, category, rating, content) VALUES
 (1, 'Outstanding Experience', 5, 'The chatbot delivered an excellent experience with accurate responses and great usability.'),
 (3, 'Reliable and Professional', 4, 'Consistent professionalism and quality output.');
 
