@@ -46,6 +46,7 @@ class AppUser(db.Model):
     system_role_id = db.Column(db.Integer, db.ForeignKey("system_role.system_role_id"), nullable=False)
     org_role_id = db.Column(db.Integer, db.ForeignKey("org_role.org_role_id"))
     organisation_id = db.Column(db.Integer, db.ForeignKey("organisation.organisation_id"))
+    org_role = db.relationship("OrgRole")
 
 class SystemRole(db.Model):
     __tablename__ = "system_role"
