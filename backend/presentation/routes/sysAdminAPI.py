@@ -54,31 +54,38 @@ def list_feedback_candidates():
         .all()
     )
 
-    candidates = []
+    out = []
     for fb in rows:
         sender = AppUser.query.get(fb.sender_id)
-        sender_role_name = None
+
+        role_name = None
         if sender and sender.org_role_id:
-            org_role = OrgRole.query.get(sender.org_role_id)
-            sender_role_name = org_role.name if org_role else None
+            r = OrgRole.query.get(sender.org_role_id)
+            role_name = r.name if r else None
         elif sender and sender.system_role_id is not None:
-            sender_role_name = "SYS_ADMIN"
-        candidates.append({
+            role_name = "SYS_ADMIN"
+
+        # group mapping for landing slots
+        group = "STAFF"
+        if role_name == "ORG_ADMIN":
+            group = "ORG_ADMIN"
+        elif role_name == "SYS_ADMIN":
+            group = "SYS_ADMIN"  # not used for landing, but still useful
+
+        out.append({
             "feedback_id": fb.feedback_id,
             "sender_id": fb.sender_id,
             "sender_username": sender.username if sender else None,
-            "sender_system_role_id": sender.system_role_id if sender else None,
-            "sender_org_role_id": sender.org_role_id if sender else None,
-            "organisation_id": sender.organisation_id if sender else None,
-            "sender_role_name": sender_role_name,
+            "sender_role_name": role_name,
+            "group": group,
             "rating": fb.rating,
             "title": fb.title,
             "content": fb.content,
-            "is_testimonial": fb.is_testimonial,
+            "is_testimonial": bool(fb.is_testimonial),
             "creation_date": fb.creation_date.isoformat() if fb.creation_date else None
         })
 
-    return jsonify({"ok": True, "candidates": candidates}), 200
+    return jsonify({"ok": True, "candidates": out}), 200
 
 
 @sysadmin_bp.post("/testimonials/feature")
@@ -87,9 +94,7 @@ def feature_feedback():
     if err:
         return err
 
-    # Body: { "feedback_id": 1, "is_testimonial": true/false }
-    
-    payload = request.get_json(force=True)
+    payload = request.get_json(force=True) or {}
     feedback_id = payload.get("feedback_id")
     is_testimonial = payload.get("is_testimonial")
 
@@ -100,15 +105,50 @@ def feature_feedback():
     if not fb:
         return jsonify({"ok": False, "error": "Feedback not found."}), 404
 
+    sender = AppUser.query.get(fb.sender_id)
+    if not sender:
+        return jsonify({"ok": False, "error": "Sender not found."}), 404
+
+    # Determine group of sender
+    sender_role_name = None
+    if sender.org_role_id:
+        r = OrgRole.query.get(sender.org_role_id)
+        sender_role_name = r.name if r else None
+    elif sender.system_role_id is not None:
+        sender_role_name = "SYS_ADMIN"
+
+    # Only allow featuring for ORG_ADMIN/STAFF (landing needs these)
+    if sender_role_name not in ("ORG_ADMIN", "STAFF"):
+        return jsonify({"ok": False, "error": "Only ORG_ADMIN or STAFF feedback can be featured."}), 400
+
+    # Set/unset
     fb.is_testimonial = bool(is_testimonial)
+
+    # If featuring: ensure ONLY ONE featured per group
+    if fb.is_testimonial:
+        # Find all feedback IDs from same group (ORG_ADMIN or STAFF)
+        # Strategy: join feedback->app_user->org_role
+        same_group_feedbacks = (
+            Feedback.query
+            .join(AppUser, Feedback.sender_id == AppUser.user_id)
+            .join(OrgRole, AppUser.org_role_id == OrgRole.org_role_id)
+            .filter(OrgRole.name == sender_role_name)
+            .filter(Feedback.feedback_id != fb.feedback_id)
+            .all()
+        )
+        for other in same_group_feedbacks:
+            other.is_testimonial = False
+
     db.session.commit()
 
     return jsonify({
         "ok": True,
         "message": "Updated testimonial flag.",
         "feedback_id": fb.feedback_id,
-        "is_testimonial": fb.is_testimonial
+        "is_testimonial": bool(fb.is_testimonial),
+        "group": sender_role_name
     }), 200
+
 
 @sysadmin_bp.get("/features")
 def list_features():
