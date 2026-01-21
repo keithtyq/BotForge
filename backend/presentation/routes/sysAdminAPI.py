@@ -1,12 +1,50 @@
 from flask import Blueprint, request, jsonify
-from backend.models import Feedback, AppUser, Feature, FAQ, OrgRole
+from backend.models import Feedback, AppUser, Feature, FAQ, OrgRole, Organisation, SystemRole
 from backend import db
+from sqlalchemy.exc import IntegrityError
 
 sysadmin_bp = Blueprint("sysadmin", __name__)
 
+@sysadmin_bp.get("/org-roles")
+def list_org_roles():
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    organisation_id = request.args.get("organisation_id", type=int)
+    if not organisation_id:
+        return jsonify({"ok": False, "error": "organisation_id query param is required."}), 400
+
+    org = Organisation.query.get(organisation_id)
+    if not org:
+        return jsonify({"ok": False, "error": "Organisation not found."}), 404
+
+    roles = (
+        OrgRole.query
+        .filter(OrgRole.organisation_id == organisation_id)
+        .order_by(OrgRole.name.asc(), OrgRole.org_role_id.asc())
+        .all()
+    )
+
+    return jsonify({
+        "ok": True,
+        "organisation_id": organisation_id,
+        "roles": [
+            {
+                "org_role_id": r.org_role_id,
+                "name": r.name,
+                "description": r.description
+            } for r in roles
+        ]
+    }), 200
+
+
 @sysadmin_bp.get("/feedback/candidates")
 def list_feedback_candidates():
-
+    _, err = _require_sysadmin()
+    if err:
+        return err
+    
     rows = (
         Feedback.query
         .order_by(
@@ -45,7 +83,10 @@ def list_feedback_candidates():
 
 @sysadmin_bp.post("/testimonials/feature")
 def feature_feedback():
-    
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
     # Body: { "feedback_id": 1, "is_testimonial": true/false }
     
     payload = request.get_json(force=True)
@@ -86,6 +127,10 @@ def list_features():
 
 @sysadmin_bp.post("/features")
 def create_feature():
+    _, err = _require_sysadmin()
+    if err:
+        return err
+    
     payload = request.get_json(force=True) or {}
     name = (payload.get("name") or "").strip()
     description = (payload.get("description") or "").strip()
@@ -114,6 +159,10 @@ def create_feature():
 
 @sysadmin_bp.put("/features/<int:feature_id>")
 def update_feature(feature_id):
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
     payload = request.get_json(force=True) or {}
 
     feature = Feature.query.get(feature_id)
@@ -150,6 +199,10 @@ def update_feature(feature_id):
 
 @sysadmin_bp.delete("/features/<int:feature_id>")
 def delete_feature(feature_id):
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
     feature = Feature.query.get(feature_id)
     if not feature:
         return jsonify({"ok": False, "error": "Feature not found."}), 404
@@ -161,6 +214,10 @@ def delete_feature(feature_id):
 
 @sysadmin_bp.get("/faq")
 def list_faq_admin():
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
     rows = FAQ.query.order_by(FAQ.display_order.asc(), FAQ.faq_id.asc()).all()
     return jsonify({
         "ok": True,
@@ -180,6 +237,10 @@ def list_faq_admin():
 
 @sysadmin_bp.post("/faq")
 def create_faq_admin():
+    _, err = _require_sysadmin()
+    if err:
+        return err
+    
     payload = request.get_json(force=True) or {}
     question = (payload.get("question") or "").strip()
     answer = (payload.get("answer") or "").strip()
@@ -223,6 +284,10 @@ def create_faq_admin():
 
 @sysadmin_bp.put("/faq/<int:faq_id>")
 def update_faq_admin(faq_id):
+    _, err = _require_sysadmin()
+    if err:
+        return err
+    
     payload = request.get_json(force=True) or {}
     faq = FAQ.query.get(faq_id)
     if not faq:
@@ -268,6 +333,10 @@ def update_faq_admin(faq_id):
 
 @sysadmin_bp.delete("/faq/<int:faq_id>")
 def delete_faq_admin(faq_id):
+    _, err = _require_sysadmin()
+    if err:
+        return err
+    
     faq = FAQ.query.get(faq_id)
     if not faq:
         return jsonify({"ok": False, "error": "FAQ not found."}), 404
@@ -275,3 +344,169 @@ def delete_faq_admin(faq_id):
     faq.status = 1  # hidden
     db.session.commit()
     return jsonify({"ok": True, "message": "FAQ hidden (soft-deleted)."}), 200
+
+
+def _require_sysadmin():
+   
+    # guard
+    # caller must send header: X-USER-ID: <user_id>
+    # only allow if that user is SYS_ADMIN (system_role_id == 0) and active
+    
+    user_id = request.headers.get("X-USER-ID")
+
+    if not user_id:
+        return None, (jsonify({"ok": False, "error": "Missing X-USER-ID header."}), 401)
+
+    try:
+        user_id = int(user_id)
+    except ValueError:
+        return None, (jsonify({"ok": False, "error": "Invalid X-USER-ID header."}), 401)
+
+    user = AppUser.query.get(user_id)
+    if not user or not user.status:
+        return None, (jsonify({"ok": False, "error": "Invalid user."}), 401)
+
+    # SYS_ADMIN is system_role_id = 0 (based on your system_role table)
+    if user.system_role_id != 0:
+        return None, (jsonify({"ok": False, "error": "Forbidden: SYS_ADMIN only."}), 403)
+
+    return user, None
+
+
+@sysadmin_bp.get("/users")
+def list_users():
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    users = AppUser.query.order_by(AppUser.user_id.asc()).all()
+
+    org_cache = {}
+    org_role_cache = {}
+    system_role_cache = {}
+
+    results = []
+    for u in users:
+        org_name = None
+        if u.organisation_id is not None:
+            if u.organisation_id not in org_cache:
+                org = Organisation.query.get(u.organisation_id)
+                org_cache[u.organisation_id] = org.name if org else None
+            org_name = org_cache[u.organisation_id]
+
+        org_role_name = None
+        if u.org_role_id is not None:
+            if u.org_role_id not in org_role_cache:
+                r = OrgRole.query.get(u.org_role_id)
+                org_role_cache[u.org_role_id] = r.name if r else None
+            org_role_name = org_role_cache[u.org_role_id]
+
+        system_role_name = None
+        if u.system_role_id is not None:
+            if u.system_role_id not in system_role_cache:
+                sr = SystemRole.query.get(u.system_role_id)
+                system_role_cache[u.system_role_id] = sr.name if sr else None
+            system_role_name = system_role_cache[u.system_role_id]
+
+        results.append({
+            "user_id": u.user_id,
+            "username": u.username,
+            "email": u.email,
+            "status": bool(u.status),
+
+            "system_role_id": u.system_role_id,
+            "system_role_name": system_role_name,
+
+            "organisation_id": u.organisation_id,
+            "organisation_name": org_name,
+
+            "org_role_id": u.org_role_id,
+            "org_role_name": org_role_name,
+        })
+
+    return jsonify({"ok": True, "users": results}), 200
+
+
+@sysadmin_bp.put("/users/<int:user_id>/status")
+def update_user_status(user_id):
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    payload = request.get_json(force=True) or {}
+    if "status" not in payload:
+        return jsonify({"ok": False, "error": "status is required."}), 400
+
+    u = AppUser.query.get(user_id)
+    if not u:
+        return jsonify({"ok": False, "error": "User not found."}), 404
+
+    u.status = bool(payload["status"])
+    db.session.commit()
+
+    return jsonify({"ok": True, "message": "User status updated.", "user_id": u.user_id, "status": bool(u.status)}), 200
+
+
+@sysadmin_bp.put("/users/<int:user_id>/role")
+def update_user_role(user_id):
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    payload = request.get_json(force=True) or {}
+    role_type = (payload.get("type") or "").strip().lower()
+
+    u = AppUser.query.get(user_id)
+    if not u:
+        return jsonify({"ok": False, "error": "User not found."}), 404
+
+    try:
+        if role_type == "system":
+            system_role_id = payload.get("system_role_id")
+            if system_role_id is None:
+                return jsonify({"ok": False, "error": "system_role_id is required for type=system."}), 400
+
+            # enforce system user shape
+            u.system_role_id = int(system_role_id)
+            u.org_role_id = None
+            u.organisation_id = None
+
+        elif role_type == "org":
+            org_role_id = payload.get("org_role_id")
+            if org_role_id is None:
+                return jsonify({"ok": False, "error": "org_role_id is required."}), 400
+
+            org_role = OrgRole.query.get(int(org_role_id))
+            if not org_role:
+                return jsonify({"ok": False, "error": "Org role not found."}), 404
+
+            # block cross-org role assignment (prevents transferring users)
+            if u.organisation_id is not None and org_role.organisation_id != u.organisation_id:
+                return jsonify({
+                    "ok": False,
+                    "error": "Cannot assign role from a different organisation."
+                }), 400
+
+            u.system_role_id = None
+            u.org_role_id = org_role.org_role_id
+            u.organisation_id = org_role.organisation_id
+
+        else:
+            return jsonify({"ok": False, "error": "type must be 'system' or 'org'."}), 400
+
+        db.session.commit()
+
+    except IntegrityError as e:
+        db.session.rollback()
+        return jsonify({"ok": False, "error": f"DB constraint failed: {str(e.orig)}"}), 400
+
+    return jsonify({
+        "ok": True,
+        "message": "User role updated.",
+        "user": {
+            "user_id": u.user_id,
+            "system_role_id": u.system_role_id,
+            "org_role_id": u.org_role_id,
+            "organisation_id": u.organisation_id
+        }
+    }), 200
