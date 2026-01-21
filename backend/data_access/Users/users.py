@@ -1,8 +1,12 @@
 from backend import db
 from backend.models import AppUser, OrgRole
+from sqlalchemy.exc import IntegrityError
+from werkzeug.security import generate_password_hash
 
 
 class UserRepository:
+
+    # ---------- READ ----------
 
     def get_by_id(self, user_id: int) -> AppUser | None:
         return db.session.get(AppUser, user_id)
@@ -10,12 +14,17 @@ class UserRepository:
     def get_by_organisation(self, organisation_id: int):
         return (
             AppUser.query
-            .filter(AppUser.organisation_id == organisation_id)
+            .filter(
+                AppUser.organisation_id == organisation_id,
+                AppUser.status == True  # hide users with status = False
+            )
             .all()
         )
 
     def get_org_role(self, role_id: int) -> OrgRole | None:
         return db.session.get(OrgRole, role_id)
+
+    # ---------- UPDATE (Organisation role update.) ----------
 
     def update_org_role(
         self,
@@ -35,8 +44,40 @@ class UserRepository:
 
         try:
             db.session.commit()
+            db.session.refresh(user)
+            return user
         except Exception:
             db.session.rollback()
             raise
 
-        return user
+    # ---------- UPDATE (For manage account) ----------
+
+    def update_profile(self, user: AppUser) -> AppUser:
+        try:
+            db.session.commit()
+            db.session.refresh(user)
+            return user
+        except IntegrityError:
+            db.session.rollback()
+            raise
+
+    def update_password(self, user: AppUser, new_password: str):
+        user.password = generate_password_hash(new_password)
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+
+    # ---------- SOFT DELETE ----------
+
+    def soft_delete_user(self, user: AppUser):
+        """
+        Soft delete by changing status to False
+        """
+        user.status = False
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
