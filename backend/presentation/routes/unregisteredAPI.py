@@ -55,94 +55,65 @@ def get_org_profile(organisation_id):
 
 @unregistered_bp.get("/testimonials")
 def get_testimonials():
-    #
-    # Public landing page testimonials:
-    #   - curated by SystemAdmin (is_testimonial = true)
-    #   - rating = 5
-    #   - 1 Admin + 1 Operator
-    #
     testimonials = []
 
-    # Fetch one Admin testimonial
-    # We search for OrgRole with name 'ORG_ADMIN'
-    admin_fb = (
-        db.session.query(Feedback, AppUser, OrgRole)
-        .join(AppUser, Feedback.sender_id == AppUser.user_id)
-        .join(OrgRole, AppUser.org_role_id == OrgRole.org_role_id)
-        .filter(Feedback.is_testimonial.is_(True))
-        .filter(Feedback.rating == 5)
-        .filter(Feedback.content.isnot(None))
-        .filter(OrgRole.name == 'ORG_ADMIN') 
-        .order_by(Feedback.creation_date.desc())
-        .first()
-    )
-
-    if admin_fb:
-        fb, user, role = admin_fb
-        testimonials.append({
-            "feedback_id": fb.feedback_id,
-            "role": "Org Admin", # Display name
-            "author": user.username,
-            "rating": fb.rating,
-            "title": fb.title,
-            "content": fb.content,
-            "date": fb.creation_date.isoformat()
-        })
-
-    # Fetch one Staff testimonial
-    operator_fb = (
-        db.session.query(Feedback, AppUser, OrgRole)
-        .join(AppUser, Feedback.sender_id == AppUser.user_id)
-        .join(OrgRole, AppUser.org_role_id == OrgRole.org_role_id)
-        .filter(Feedback.is_testimonial.is_(True))
-        .filter(Feedback.rating == 5)
-        .filter(Feedback.content.isnot(None))
-        .filter(OrgRole.name == 'STAFF')
-        .order_by(Feedback.creation_date.desc())
-        .first()
-    )
-
-    if operator_fb:
-        fb, user, role = operator_fb
-        testimonials.append({
-            "feedback_id": fb.feedback_id,
-            "role": "Staff", # Display name
-            "author": user.username,
-            "rating": fb.rating,
-            "title": fb.title,
-            "content": fb.content,
-            "date": fb.creation_date.isoformat()
-        })
-    
-    # Fallback: if we couldn't find specific roles, just fill up to 2 with any
-    if len(testimonials) < 2:
-        existing_ids = [t["feedback_id"] for t in testimonials]
-        
-        others = (
-            db.session.query(Feedback, AppUser, OrgRole)
+    def pick_for_group(role_name: str):
+        # 1) override: featured first
+        featured = (
+            Feedback.query
             .join(AppUser, Feedback.sender_id == AppUser.user_id)
-            .outerjoin(OrgRole, AppUser.org_role_id == OrgRole.org_role_id)
+            .join(OrgRole, AppUser.org_role_id == OrgRole.org_role_id)
+            .filter(OrgRole.name == role_name)
             .filter(Feedback.is_testimonial.is_(True))
-            .filter(Feedback.rating == 5)
             .filter(Feedback.content.isnot(None))
-            .filter(Feedback.feedback_id.notin_(existing_ids))
             .order_by(Feedback.creation_date.desc())
-            .limit(2 - len(testimonials))
-            .all()
+            .first()
         )
-        
-        for fb, user, role in others:
-            testimonials.append({
-                "feedback_id": fb.feedback_id,
-                "role": role.name if role else "User",
-                "author": user.username,
-                "rating": fb.rating,
-                "title": fb.title,
-                "content": fb.content,
-                "date": fb.creation_date.isoformat()
-            })
+        if featured:
+            return featured
+
+        # 2) default: best rating then newest
+        best = (
+            Feedback.query
+            .join(AppUser, Feedback.sender_id == AppUser.user_id)
+            .join(OrgRole, AppUser.org_role_id == OrgRole.org_role_id)
+            .filter(OrgRole.name == role_name)
+            .filter(Feedback.content.isnot(None))
+            .order_by(Feedback.rating.desc().nullslast(), Feedback.creation_date.desc())
+            .first()
+        )
+        return best
+
+    # Slot 1: ORG_ADMIN
+    orgadmin_fb = pick_for_group("ORG_ADMIN")
+    if orgadmin_fb:
+        sender = AppUser.query.get(orgadmin_fb.sender_id)
+        testimonials.append({
+            "feedback_id": orgadmin_fb.feedback_id,
+            "role": "ORG_ADMIN",
+            "author": sender.username if sender else "Anonymous",
+            "rating": orgadmin_fb.rating,
+            "title": orgadmin_fb.title,
+            "content": orgadmin_fb.content,
+            "date": orgadmin_fb.creation_date.isoformat() if orgadmin_fb.creation_date else None
+        })
+
+    # Slot 2: STAFF (operator/staff)
+    staff_fb = pick_for_group("STAFF")
+    if staff_fb:
+        sender = AppUser.query.get(staff_fb.sender_id)
+        testimonials.append({
+            "feedback_id": staff_fb.feedback_id,
+            "role": "STAFF",
+            "author": sender.username if sender else "Anonymous",
+            "rating": staff_fb.rating,
+            "title": staff_fb.title,
+            "content": staff_fb.content,
+            "date": staff_fb.creation_date.isoformat() if staff_fb.creation_date else None
+        })
 
     return jsonify({"ok": True, "testimonials": testimonials}), 200
+
 
 
 
