@@ -1,55 +1,70 @@
 from flask import Blueprint, request, jsonify
-from werkzeug.security import generate_password_hash
 from sqlalchemy.exc import IntegrityError
-
-from backend.application.invitation_service import (
-    validate_invitation_token,
-    accept_invitation_and_create_operator
-)
+from backend.application.user_service import UserService
 from backend.application.user_profile_service import UserProfileService
 from backend.data_access.Users.users import UserRepository
 
-operator_bp = Blueprint("operator", __name__, url_prefix="/api/operator")
+org_admin_bp = Blueprint("org_admin", __name__, url_prefix="/api/org-admin")
 
+user_service = UserService(UserRepository())
 profile_service = UserProfileService(UserRepository())
 
 
-# =========================
-# Invitation & registration
-# =========================
+# =================================
+# ORG ADMIN: manage organisation users
+# =================================
 
-@operator_bp.get("/invitations/validate")
-def validate():
-    token = request.args.get("token", "")
-    result = validate_invitation_token(token)
-    return jsonify(result), (200 if result.get("ok") else 400)
+@org_admin_bp.get("/users")
+def list_org_users():
+    organisation_id = request.args.get("organisation_id", type=int)
+    if not organisation_id:
+        return {"error": "organisation_id is required"}, 400
 
+    users = user_service.get_users_by_organisation(organisation_id)
 
-@operator_bp.post("/register")
-def operator_register():
-    payload = request.get_json(force=True)
-
-    password = payload.get("password") or ""
-    confirm = payload.get("confirmPassword") or ""
-
-    if not password or password != confirm:
-        return jsonify({"ok": False, "error": "Password mismatch."}), 400
-    if len(password) < 8:
-        return jsonify({"ok": False, "error": "Password must be at least 8 characters."}), 400
-
-    # Hash password here, then pass to service
-    payload["password_hash"] = generate_password_hash(password)
-
-    result = accept_invitation_and_create_operator(payload)
-    return jsonify(result), (200 if result.get("ok") else 400)
+    return jsonify([
+        {
+            "user_id": u.user_id,
+            "username": u.username,
+            "email": u.email,
+            "status": u.status,
+            "org_role_id": u.org_role_id,
+            "org_role_name": u.org_role.name if u.org_role else None
+        }
+        for u in users
+    ]), 200
 
 
-# ================================
-# Operator: manage account section
-# ================================
+@org_admin_bp.put("/users/<int:user_id>/role")
+def update_user_role(user_id: int):
+    data = request.json or {}
+    new_org_role_id = data.get("new_org_role_id")
 
-@operator_bp.put("/profile")
-def update_operator_profile():
+    if not new_org_role_id:
+        return {"error": "new_org_role_id is required"}, 400
+
+    try:
+        updated_user = user_service.change_user_org_role(
+            target_user_id=user_id,
+            new_org_role_id=new_org_role_id
+        )
+    except ValueError as e:
+        return {"error": str(e)}, 400
+
+    return {
+        "user_id": updated_user.user_id,
+        "username": updated_user.username,
+        "org_role_id": updated_user.org_role_id,
+        "org_role_name": updated_user.org_role.name if updated_user.org_role else None
+    }, 200
+
+
+# =================================
+# ORG ADMIN: own account management
+# =================================
+
+@org_admin_bp.put("/profile")
+def update_admin_profile():
     data = request.get_json() or {}
     user_id = data.get("user_id")
 
@@ -74,8 +89,8 @@ def update_operator_profile():
     }), 200
 
 
-@operator_bp.put("/password")
-def change_operator_password():
+@org_admin_bp.put("/password")
+def change_admin_password():
     data = request.get_json() or {}
 
     user_id = data.get("user_id")
@@ -103,8 +118,9 @@ def change_operator_password():
     return {"message": "Password updated"}, 200
 
 
-@operator_bp.delete("/account")
-def delete_operator_account():
+
+@org_admin_bp.delete("/account")
+def deactivate_admin_account():
     data = request.get_json() or {}
     user_id = data.get("user_id")
 
