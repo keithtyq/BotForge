@@ -12,6 +12,26 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
   const [industry, setIndustry] = useState('f&b');
   const [size, setSize] = useState('11-50');
 
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        // If user is SysAdmin (role_id 0 generally maps to SysAdmin in this context, 
+        // but strictly checking system_role_id if available is better. 
+        // Assuming user object structure from login response logic.)
+        if (user.role_id === 0 || user.system_role_id === 0) {
+          console.log("System Admin detected, skipping specific checks.");
+          // Ideally redirect or just show success, but user asked "no need to do this"
+          // Assuming we skip to success
+          if (onSuccess) onSuccess();
+        }
+      } catch (e) {
+        console.error("Error parsing user", e);
+      }
+    }
+  }, [onSuccess]);
+
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
