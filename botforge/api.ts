@@ -1,4 +1,5 @@
 
+
 const API_URL = (import.meta as any).env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
 
 export interface ApiResponse<T = any> {
@@ -8,66 +9,51 @@ export interface ApiResponse<T = any> {
 }
 
 export const api = {
-    async post<T>(endpoint: string, data: any): Promise<ApiResponse<T>> {
+    async request<T>(endpoint: string, method: string, data?: any): Promise<ApiResponse<T>> {
+        const headers: any = {
+            'Content-Type': 'application/json',
+        };
+
+        // DEV ONLY: Inject X-USER-ID for testing sysadmin features if not present
+        // In a real app, you'd get this from a valid auth token or user state
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            try {
+                const u = JSON.parse(storedUser);
+                if (u && u.user_id) {
+                    headers['X-USER-ID'] = u.user_id.toString();
+                    console.log("[DEBUG] api.ts: Injected header X-USER-ID:", headers['X-USER-ID']);
+                }
+            } catch (e) { /* ignore */ }
+        }
+
         try {
             const response = await fetch(`${API_URL}${endpoint}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
+                method,
+                headers,
+                body: data ? JSON.stringify(data) : undefined,
             });
             return await response.json();
         } catch (error) {
             console.error('API Error:', error);
             return { ok: false, error: 'Network error or server unreachable' };
         }
+    },
+
+    async post<T>(endpoint: string, data: any): Promise<ApiResponse<T>> {
+        return this.request(endpoint, 'POST', data);
     },
 
     async get<T>(endpoint: string): Promise<ApiResponse<T>> {
-        try {
-            const response = await fetch(`${API_URL}${endpoint}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('API Error:', error);
-            return { ok: false, error: 'Network error or server unreachable' };
-        }
+        return this.request(endpoint, 'GET');
     },
 
     async put<T>(endpoint: string, data: any): Promise<ApiResponse<T>> {
-        try {
-            const response = await fetch(`${API_URL}${endpoint}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('API Error:', error);
-            return { ok: false, error: 'Network error or server unreachable' };
-        }
+        return this.request(endpoint, 'PUT', data);
     },
 
     async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
-        try {
-            const response = await fetch(`${API_URL}${endpoint}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('API Error:', error);
-            return { ok: false, error: 'Network error or server unreachable' };
-        }
+        return this.request(endpoint, 'DELETE');
     },
 };
 
@@ -144,8 +130,41 @@ export const sysAdminService = {
 
     async deleteFaq(faqId: number) {
         return api.delete<any>(`/api/sysadmin/faq/${faqId}`);
-    }
+    },
 
+    // Subscription Management
+    async listSubscriptions() {
+        return api.get<any>('/api/sysadmin/subscriptions');
+    },
+
+    async createSubscription(data: { name: string; price: number; description?: string; status: number }) {
+        return api.post<any>('/api/sysadmin/subscriptions', data);
+    },
+
+    async updateSubscription(subscriptionId: number, data: { name?: string; price?: number; description?: string; status?: number }) {
+        return api.put<any>(`/api/sysadmin/subscriptions/${subscriptionId}`, data);
+    },
+
+    async deleteSubscription(subscriptionId: number) {
+        return api.delete<any>(`/api/sysadmin/subscriptions/${subscriptionId}`);
+    },
+
+    async getSubscriptionFeatures(subscriptionId: number) {
+        return api.get<any>(`/api/sysadmin/subscriptions/${subscriptionId}/features`);
+    },
+
+    async updateSubscriptionFeatures(subscriptionId: number, featureIds: number[]) {
+        return api.put<any>(`/api/sysadmin/subscriptions/${subscriptionId}/features`, { feature_ids: featureIds });
+    },
+
+    // Feedback Management
+    async listFeedbackCandidates() {
+        return api.get<any>('/api/sysadmin/feedback/candidates');
+    },
+
+    async featureFeedback(feedbackId: number, isTestimonial: boolean) {
+        return api.post<any>('/api/sysadmin/testimonials/feature', { feedback_id: feedbackId, is_testimonial: isTestimonial });
+    }
 };
 
 export const feedbackService = {

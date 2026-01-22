@@ -24,6 +24,7 @@ export interface User {
   email: string;
   role_id: number;
   organisation_id: number;
+  system_role_id?: number;
 }
 
 export interface Testimonial {

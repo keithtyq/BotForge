@@ -398,21 +398,30 @@ def _require_sysadmin():
     # only allow if that user is SYS_ADMIN (system_role_id == 0) and active
     
     user_id = request.headers.get("X-USER-ID")
+    print(f"[DEBUG] _require_sysadmin: Header X-USER-ID={user_id}")
 
     if not user_id:
+        print("[DEBUG] Missing X-USER-ID header")
         return None, (jsonify({"ok": False, "error": "Missing X-USER-ID header."}), 401)
 
     try:
         user_id = int(user_id)
     except ValueError:
+        print(f"[DEBUG] Invalid X-USER-ID format: {user_id}")
         return None, (jsonify({"ok": False, "error": "Invalid X-USER-ID header."}), 401)
 
     user = AppUser.query.get(user_id)
+    if user:
+        print(f"[DEBUG] User Found: ID={user.user_id}, Name={user.username}, Role={user.system_role_id}, Status={user.status}")
+    else:
+        print(f"[DEBUG] User NOT found for ID {user_id}")
+
     if not user or not user.status:
         return None, (jsonify({"ok": False, "error": "Invalid user."}), 401)
 
     # SYS_ADMIN is system_role_id = 0 (based on your system_role table)
     if user.system_role_id != 0:
+        print(f"[DEBUG] Forbidden: User {user.username} has system_role_id={user.system_role_id}, expected 0")
         return None, (jsonify({"ok": False, "error": "Forbidden: SYS_ADMIN only."}), 403)
 
     return user, None

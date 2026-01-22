@@ -40,6 +40,7 @@ export const Auth: React.FC<AuthProps> = ({ view, onNavigate, onLoginSuccess }) 
       });
 
       if (res.ok && res.user) {
+        localStorage.setItem('user', JSON.stringify(res.user));
         onLoginSuccess(res.user);
       } else {
         setError(res.error || 'Login failed');

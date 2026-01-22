@@ -38,8 +38,10 @@ export default function App() {
   }, []);
 
   const handleLoginSuccess = (user: User) => {
+    console.log("[DEBUG] handleLoginSuccess user:", user);
     setUser(user);
-    const isAdmin = user.username === 'SystemAdmin' || user.role_id === 0;
+    const isAdmin = user.username === 'SystemAdmin' || user.role_id === 0 || user.system_role_id === 0;
+    console.log("[DEBUG] isAdmin check:", isAdmin, "system_role_id:", user.system_role_id);
 
     if (isAdmin) {
       setCurrentPage(PageView.SYSTEM_ADMIN);
