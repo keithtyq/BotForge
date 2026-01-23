@@ -20,7 +20,7 @@ def create_app():
         raise RuntimeError("DATABASE_URL not set in .env")
 
     db.init_app(app)
-    cors.init_app(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "https://fyp-three-sage.vercel.app", "http://localhost:3000"]}})
+    cors.init_app(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "https://fyp-three-sage.vercel.app", "http://127.0.0.1:3000", "http://localhost:3000"]}})
 
     from backend.presentation.routes.unregisteredAPI import unregistered_bp
     from backend.presentation.routes.faqAPI import faq_bp
