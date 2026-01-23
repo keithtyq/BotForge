@@ -173,13 +173,6 @@ export const feedbackService = {
     }
 };
 
-export const subscriptionService = {
-    async assignSubscription(data: { user_id: number; subscription_id: number }) {
-        return api.post('/api/subscriptions/assign', data);
-    }
-};
-
-
 export const orgAdminService = {
     async listOrgUsers(organisationId: number) {
         return api.get<any>(`/api/org-admin/users?organisation_id=${organisationId}`);
@@ -209,5 +202,11 @@ export const orgRoleService = {
 
     async assignPermissions(roleId: number, permissionIds: number[]) {
         return api.put<any>(`/api/org-roles/${roleId}/permissions`, { permission_ids: permissionIds });
+    }
+};
+
+export const subscriptionService = {
+    async assignSubscription(data: { user_id: number; subscription_id: number }) {
+        return api.post('/api/subscriptions/assign', data);
     }
 };
