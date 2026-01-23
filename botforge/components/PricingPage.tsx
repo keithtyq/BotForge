@@ -39,22 +39,36 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, user, onSu
     setMessage(null);
 
     try {
-      const res = await authService.updateOrgProfile({
+      // 1. Update Organization Size
+      // We do this first to ensure the organization profile reflects the user's selection
+      const profileRes = await authService.updateOrgProfile({
         organisation_id: user.organisation_id,
-        subscription_id: planId,
         size: selectedSize
       });
 
-      if (res.ok) {
+      if (!profileRes.ok) {
+        throw new Error(profileRes.error || "Failed to update organization size.");
+      }
+
+      // 2. Assign the Subscription Plan
+      // We use the specific service that hits /api/subscriptions/assign
+      const subRes = await subscriptionService.assignSubscription({
+        user_id: user.user_id,
+        subscription_id: planId
+      });
+
+      if (subRes.ok) {
         setMessage(`Successfully subscribed to ${planName} Plan (${selectedSize})!`);
         if (onSuccess) {
           setTimeout(onSuccess, 1500); // Wait 1.5s to show message
         }
       } else {
-        setMessage(`Error: ${res.error}`);
+        setMessage(`Error: ${subRes.error}`);
       }
-    } catch (err) {
-      setMessage('Error updating subscription.');
+
+    } catch (err: any) {
+      console.error(err);
+      setMessage(err.message || 'Error updating subscription.');
     } finally {
       setIsLoading(false);
     }
