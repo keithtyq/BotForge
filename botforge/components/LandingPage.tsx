@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PageView, Testimonial } from '../types';
-import { Search, RotateCw, Settings, Play } from 'lucide-react';
+import { Search, RotateCw, Settings, Play, Star } from 'lucide-react';
 import { featureService, publicService } from '../api';
 
 interface LandingPageProps {
@@ -27,7 +27,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           const mappedTestimonials: Testimonial[] = response.testimonials.map((t: any) => ({
             quote: t.content,
             author: t.author,
-            role: t.role // Note: This displays the system role (e.g. OrgAdmin). 
+            role: t.role, // Note: This displays the system role (e.g. OrgAdmin).
+            rating: t.rating
           }));
           setTestimonials(mappedTestimonials);
         }
@@ -123,11 +124,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             {testimonials.map((t, i) => (
               <div key={i} className="bg-gray-100 p-8 rounded border border-gray-300 relative">
                 <div className="text-6xl text-gray-300 font-serif absolute top-4 left-6">“</div>
-                <p className="text-gray-800 mb-6 relative z-10 pt-4 text-lg font-medium leading-relaxed">
+
+                <p className="text-gray-800 mb-6 relative z-10 pt-2 text-lg font-medium leading-relaxed">
                   {t.quote}
                 </p>
-                <div className="text-sm text-gray-500 border-t border-gray-300 pt-4">
-                  <span className="font-bold text-gray-700">{t.author}</span>, {t.role}
+                <div className="flex justify-between items-center text-sm text-gray-500 border-t border-gray-300 pt-4">
+                  <div>
+                    <span className="font-bold text-gray-700">{t.author}</span>, {t.role}
+                  </div>
+                  <div className="flex">
+                    {[...Array(5)].map((_, starIndex) => (
+                      <Star
+                        key={starIndex}
+                        className={`h-5 w-5 ${starIndex < (t.rating || 5) ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                          }`}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             ))}
