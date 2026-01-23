@@ -84,14 +84,6 @@ export const publicService = {
         return api.get<any>('/api/subscriptions/active');
     },
 };
-async assignSubscription(userId: number, subscriptionId: number, size: string) {
-        return api.post<any>('/api/subscriptions/assign', {
-            user_id: userId,
-            subscription_id: subscriptionId,
-            size: size
-        });
-    },
-};
 
 export const faqService = {
     async listFaqs() {
@@ -102,43 +94,6 @@ export const faqService = {
 export const featureService = {
     async getFeatures(subscriptionId: number) {
         return api.get<any>(`/api/features/highlighted?subscription_id=${subscriptionId}`);
-    }
-};
-
-export const orgAdminService = {
-    // Staff Management
-    async listStaff(organisationId: number) {
-        return api.get<any>(`/api/org/${organisationId}/staff`);
-    },
-
-    async assignRole(data: { user_id: number; role_id: number }) {
-        return api.post<any>('/api/org/staff/assign-role', data);
-    },
-
-    async removeStaff(userId: number) {
-        return api.delete<any>(`/api/org/staff/${userId}`);
-    },
-
-    // Role Management
-    async listRoles(organisationId: number) {
-        return api.get<any>(`/api/org/${organisationId}/roles`);
-    },
-
-    async createRole(data: { organisation_id: number; name: string; description?: string; permissions: string[] }) {
-        return api.post<any>('/api/org/roles', data);
-    },
-
-    async updateRole(roleId: number, data: { name?: string; description?: string; permissions?: string[] }) {
-        return api.put<any>(`/api/org/roles/${roleId}`, data);
-    },
-
-    async deleteRole(roleId: number) {
-        return api.delete<any>(`/api/org/roles/${roleId}`);
-    },
-    
-    // Permission Dictionary (Static or Fetched)
-    async listAvailablePermissions() {
-        return api.get<any>('/api/org/permissions/list'); 
     }
 };
 
@@ -217,4 +172,3 @@ export const feedbackService = {
         return api.post<any>('/api/feedback', data);
     }
 };
-
