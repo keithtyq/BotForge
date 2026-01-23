@@ -84,6 +84,14 @@ export const publicService = {
         return api.get<any>('/api/subscriptions/active');
     },
 };
+async assignSubscription(userId: number, subscriptionId: number, size: string) {
+        return api.post<any>('/api/subscriptions/assign', {
+            user_id: userId,
+            subscription_id: subscriptionId,
+            size: size
+        });
+    },
+};
 
 export const faqService = {
     async listFaqs() {
