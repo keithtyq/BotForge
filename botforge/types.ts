@@ -31,6 +31,7 @@ export interface Testimonial {
   quote: string;
   author: string;
   role: string;
+  rating?: number;
 }
 
 export interface PricingPlan {
