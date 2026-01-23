@@ -1,104 +1,127 @@
-import React from 'react';
-import { ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { orgAdminService } from '../../api';
+import { User } from '../../types';
+import { Loader2, Trash2, UserCog } from 'lucide-react';
 
 interface ManageStaffProps {
-    onBack: () => void;
-    onCreateRole: () => void; // Callback to switch to a Create Role view if we implemented it fully
+    user: User; // Current logged in admin
 }
 
-export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }) => {
+export const ManageStaff: React.FC<ManageStaffProps> = ({ user }) => {
+    const [staff, setStaff] = useState<any[]>([]);
+    const [roles, setRoles] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [message, setMessage] = useState<string | null>(null);
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        setIsLoading(true);
+        try {
+            // Fetch Staff and Roles in parallel
+            const [staffRes, rolesRes] = await Promise.all([
+                orgAdminService.listStaff(user.organisation_id),
+                orgAdminService.listRoles(user.organisation_id)
+            ]);
+
+            if (staffRes.ok) setStaff(staffRes.staff);
+            if (rolesRes.ok) setRoles(rolesRes.roles);
+        } catch (error) {
+            console.error("Failed to load staff data", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleRoleChange = async (targetUserId: number, newRoleId: number) => {
+        try {
+            const res = await orgAdminService.assignRole({
+                user_id: targetUserId,
+                role_id: newRoleId
+            });
+            if (res.ok) {
+                setMessage("Role updated successfully.");
+                loadData(); // Refresh list
+            } else {
+                setMessage(`Error: ${res.error}`);
+            }
+        } catch (error) {
+            setMessage("Failed to update role.");
+        }
+    };
+
+    const handleRemoveStaff = async (targetUserId: number) => {
+        if(!confirm("Are you sure you want to remove this staff member?")) return;
+        
+        try {
+            const res = await orgAdminService.removeStaff(targetUserId);
+            if (res.ok) {
+                setStaff(staff.filter(s => s.user_id !== targetUserId));
+                setMessage("Staff removed.");
+            }
+        } catch (error) {
+            setMessage("Failed to remove staff.");
+        }
+    };
+
     return (
-        <div className="animate-in fade-in duration-500">
-            <div className="mb-6">
-                <button
-                    onClick={onBack}
-                    className="text-gray-500 hover:text-gray-900 text-sm flex items-center font-medium transition-colors"
-                >
-                    <span className="text-lg mr-2 leading-none">‹</span> Back to Dashboard
-                </button>
-            </div>
+        <div className="p-6">
+            <h2 className="text-2xl font-bold mb-6 flex items-center">
+                <UserCog className="mr-2" /> Manage Staff
+            </h2>
 
-            <h2 className="text-3xl font-bold text-center text-gray-900 mb-10">Manage Staff & Roles</h2>
-
-            {/* Main Container */}
-            <div className="max-w-6xl mx-auto space-y-8">
-
-                {/* view Staff Section */}
-                <div className="bg-white border border-gray-300 rounded-xl p-8 shadow-sm">
-                    <h3 className="text-base font-bold text-gray-700 mb-4">View Staff</h3>
-
-                    <div className="space-y-4 mb-8">
-                        {/* User Row 1 */}
-                        <div className="border border-gray-300 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
-                            <div className="text-sm text-gray-800 font-bold">
-                                User: <span className="font-normal">John Tan</span> &nbsp;&nbsp; Role: <span className="font-normal">Staff</span>
-                            </div>
-                            <div className="flex gap-3">
-                                <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-1.5 rounded text-sm font-bold transition-colors">View</button>
-                                <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-1.5 rounded text-sm font-bold transition-colors">Edit</button>
-                            </div>
-                        </div>
-
-                        {/* User Row 2 */}
-                        <div className="border border-gray-300 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
-                            <div className="text-sm text-gray-800 font-bold">
-                                User: <span className="font-normal">Lim Kai Xuan</span> &nbsp;&nbsp; Role: <span className="font-normal">Admin</span>
-                            </div>
-                            <div className="flex gap-3">
-                                <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-1.5 rounded text-sm font-bold transition-colors">View</button>
-                                <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-1.5 rounded text-sm font-bold transition-colors">Edit</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-center">
-                        <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-8 py-2.5 rounded-lg text-sm font-bold transition-colors">
-                            Invite New User
-                        </button>
-                    </div>
+            {message && (
+                <div className="bg-blue-50 text-blue-700 p-3 rounded mb-4">
+                    {message}
                 </div>
+            )}
 
-                {/* Manage Roles Section */}
-                <div className="bg-white border border-gray-300 rounded-xl p-8 shadow-sm">
-                    <h3 className="text-base font-bold text-gray-700 mb-4">Manage Roles</h3>
-
-                    <div className="space-y-4 mb-8">
-                        {/* Role Row 1 */}
-                        <div className="border border-gray-300 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
-                            <div className="text-sm text-gray-800 font-bold">
-                                Role: <span className="font-normal">Staff</span>
-                            </div>
-                            <div className="flex gap-3">
-                                <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-1.5 rounded text-sm font-bold transition-colors">View</button>
-                                <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-1.5 rounded text-sm font-bold transition-colors">Update</button>
-                                <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-1.5 rounded text-sm font-bold transition-colors">Delete</button>
-                            </div>
-                        </div>
-
-                        {/* Role Row 2 */}
-                        <div className="border border-gray-300 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
-                            <div className="text-sm text-gray-800 font-bold">
-                                Role: <span className="font-normal">Admin</span>
-                            </div>
-                            <div className="flex gap-3">
-                                <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-1.5 rounded text-sm font-bold transition-colors">View</button>
-                                <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-1.5 rounded text-sm font-bold transition-colors">Update</button>
-                                <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-1.5 rounded text-sm font-bold transition-colors">Delete</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-center">
-                        <button
-                            onClick={onCreateRole}
-                            className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-8 py-2.5 rounded-lg text-sm font-bold transition-colors"
-                        >
-                            Create New Role
-                        </button>
-                    </div>
+            {isLoading ? (
+                <Loader2 className="animate-spin" />
+            ) : (
+                <div className="bg-white shadow rounded-lg overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {staff.map((s) => (
+                                <tr key={s.user_id}>
+                                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{s.username}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-gray-500">{s.email}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <select 
+                                            value={s.role_id || ''}
+                                            onChange={(e) => handleRoleChange(s.user_id, parseInt(e.target.value))}
+                                            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                                        >
+                                            <option value="" disabled>No Role</option>
+                                            {roles.map(r => (
+                                                <option key={r.role_id} value={r.role_id}>{r.name}</option>
+                                            ))}
+                                        </select>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button 
+                                            onClick={() => handleRemoveStaff(s.user_id)}
+                                            className="text-red-600 hover:text-red-900 flex items-center justify-end w-full"
+                                        >
+                                            <Trash2 size={16} /> Remove
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
-
-            </div>
+            )}
         </div>
     );
 };
