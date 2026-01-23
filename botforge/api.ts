@@ -172,3 +172,42 @@ export const feedbackService = {
         return api.post<any>('/api/feedback', data);
     }
 };
+
+export const subscriptionService = {
+    async assignSubscription(data: { user_id: number; subscription_id: number }) {
+        return api.post('/api/subscriptions/assign', data);
+    }
+};
+
+
+export const orgAdminService = {
+    async listOrgUsers(organisationId: number) {
+        return api.get<any>(`/api/org-admin/users?organisation_id=${organisationId}`);
+    },
+
+    async updateUserRole(userId: number, newRoleId: number) {
+        return api.put<any>(`/api/org-admin/users/${userId}/role`, { new_org_role_id: newRoleId });
+    }
+};
+
+export const orgRoleService = {
+    async listRoles(organisationId: number) {
+        return api.get<any>(`/api/org-roles/?organisation_id=${organisationId}`);
+    },
+
+    async createRole(data: { organisation_id: number; name: string; description?: string }) {
+        return api.post<any>('/api/org-roles/', data);
+    },
+
+    async updateRole(roleId: number, data: { name?: string; description?: string }) {
+        return api.put<any>(`/api/org-roles/${roleId}`, data);
+    },
+
+    async deleteRole(roleId: number) {
+        return api.delete<any>(`/api/org-roles/${roleId}`);
+    },
+
+    async assignPermissions(roleId: number, permissionIds: number[]) {
+        return api.put<any>(`/api/org-roles/${roleId}/permissions`, { permission_ids: permissionIds });
+    }
+};
