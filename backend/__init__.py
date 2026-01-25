@@ -34,6 +34,7 @@ def create_app():
     from backend.presentation.routes.subscriptionsAPI import subscriptions_bp
     from backend.presentation.routes.orgAdminAPI import org_admin_bp
     from backend.presentation.routes.notificationsAPI import notifications_bp
+    from backend.presentation.routes.chatMessagesAPI import chat_messages_bp
     
     app.register_blueprint(unregistered_bp, url_prefix="/api/public")
     app.register_blueprint(faq_bp, url_prefix="/api/public")
@@ -47,6 +48,7 @@ def create_app():
     app.register_blueprint(subscriptions_bp, url_prefix="/api")
     app.register_blueprint(org_admin_bp, url_prefix="/api/org-admin")
     app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
+    app.register_blueprint(chat_messages_bp, url_prefix="/api/chat-messages")
     
     @app.get("/health")
     def health():
