@@ -1,5 +1,10 @@
 from backend import db
-from backend.models import Organisation
+from backend.models import (
+    Organisation,
+    OrganisationRestaurant,
+    OrganisationEducation,
+    OrganisationRetail,
+)
 
 
 class CompanyProfileRepository:
@@ -28,17 +33,27 @@ class CompanyProfileRepository:
         if not organisation:
             return None
 
-        # Convert SQLAlchemy model -> dictionary
+        # Convert SQLAlchemy model -> dictionary (including subtype)
         return self._to_dict(organisation)
 
     # -------------------------------------------------------------------
     # Helper: Converts Organisation model into data usable by templates
     # -------------------------------------------------------------------
     def _to_dict(self, org: Organisation):
-        return {
+        # Normalize industry for downstream template lookup
+        industry_raw = (org.industry or "").strip().lower()
+        industry_map = {
+            "f&b": "restaurant",
+            "restaurant": "restaurant",
+            "education": "education",
+            "retail": "retail",
+        }
+        industry = industry_map.get(industry_raw, industry_raw)
+
+        data = {
             "organisation_id": org.organisation_id,
             "company_name": org.name,
-            "industry": org.industry,
+            "industry": industry,
 
             # Common
             "description": org.description,
@@ -50,35 +65,51 @@ class CompanyProfileRepository:
             "website_url": org.website_url,
             "business_hours": org.business_hours,
 
-            # Restaurant
-            "cuisine_type": org.cuisine_type,
-            "restaurant_style": org.restaurant_style,
-            "dining_options": org.dining_options,
-            "supports_reservations": org.supports_reservations,
-            "reservation_link": org.reservation_link,
-            "price_range": org.price_range,
-            "seating_capacity": org.seating_capacity,
-            "specialties": org.specialties,
-
-            # Education
-            "institution_type": org.institution_type,
-            "target_audience": org.target_audience,
-            "course_types": org.course_types,
-            "delivery_mode": org.delivery_mode,
-            "intake_periods": org.intake_periods,
-            "application_link": org.application_link,
-            "response_time": org.response_time,
-            "key_programs": org.key_programs,
-
-            # Retail
-            "retail_type": org.retail_type,
-            "product_categories": org.product_categories,
-            "has_physical_store": org.has_physical_store,
-            "has_online_store": org.has_online_store,
-            "online_store_url": org.online_store_url,
-            "delivery_options": org.delivery_options,
-            "return_policy": org.return_policy,
-            "warranty_info": org.warranty_info,
-            "payment_methods": org.payment_methods,
-            "promotions_note": org.promotions_note,
+            # Industry-specific fields are loaded from subtype tables below.
         }
+
+        if industry == "restaurant":
+            r = OrganisationRestaurant.query.get(org.organisation_id)
+            if r:
+                data.update({
+                    "cuisine_type": r.cuisine_type,
+                    "restaurant_style": r.restaurant_style,
+                    "dining_options": r.dining_options,
+                    "supports_reservations": r.supports_reservations,
+                    "reservation_link": r.reservation_link,
+                    "price_range": r.price_range,
+                    "seating_capacity": r.seating_capacity,
+                    "specialties": r.specialties,
+                })
+
+        elif industry == "education":
+            e = OrganisationEducation.query.get(org.organisation_id)
+            if e:
+                data.update({
+                    "institution_type": e.institution_type,
+                    "target_audience": e.target_audience,
+                    "course_types": e.course_types,
+                    "delivery_mode": e.delivery_mode,
+                    "intake_periods": e.intake_periods,
+                    "application_link": e.application_link,
+                    "response_time": e.response_time,
+                    "key_programs": e.key_programs,
+                })
+
+        elif industry == "retail":
+            r = OrganisationRetail.query.get(org.organisation_id)
+            if r:
+                data.update({
+                    "retail_type": r.retail_type,
+                    "product_categories": r.product_categories,
+                    "has_physical_store": r.has_physical_store,
+                    "has_online_store": r.has_online_store,
+                    "online_store_url": r.online_store_url,
+                    "delivery_options": r.delivery_options,
+                    "return_policy": r.return_policy,
+                    "warranty_info": r.warranty_info,
+                    "payment_methods": r.payment_methods,
+                    "promotions_note": r.promotions_note,
+                })
+
+        return data
