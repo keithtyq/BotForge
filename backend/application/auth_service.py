@@ -4,7 +4,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import current_app
 
 from backend import db
-from backend.models import Organisation, AppUser, OrgRole
+from backend.models import (
+    Organisation,
+    OrganisationRestaurant,
+    OrganisationEducation,
+    OrganisationRetail,
+    AppUser,
+    OrgRole,
+)
 from backend.application.notification_service import NotificationService
 from backend.data_access.Notifications.notifications import NotificationRepository
 from backend.data_access.Users.users import UserRepository
@@ -204,65 +211,115 @@ def update_org_profile(payload: dict) -> dict:
     if payload.get("business_hours") is not None:
         org.business_hours = payload.get("business_hours")
 
-    # Restaurant-specific fields
-    if payload.get("cuisine_type") is not None:
-        org.cuisine_type = payload.get("cuisine_type")
-    if payload.get("restaurant_style") is not None:
-        org.restaurant_style = payload.get("restaurant_style")
-    if payload.get("dining_options") is not None:
-        org.dining_options = payload.get("dining_options")
-    if payload.get("supports_reservations") is not None:
-        org.supports_reservations = payload.get("supports_reservations")
-    if payload.get("reservation_link") is not None:
-        org.reservation_link = payload.get("reservation_link")
-    if payload.get("price_range") is not None:
-        org.price_range = payload.get("price_range")
-    if payload.get("seating_capacity") is not None:
-        org.seating_capacity = payload.get("seating_capacity")
-    if payload.get("specialties") is not None:
-        org.specialties = payload.get("specialties")
+    # Normalize industry to match DB subtypes
+    prev_industry_raw = (org.industry or "").strip().lower()
+    raw_industry = (payload.get("industry") or org.industry or "").strip().lower()
+    industry_map = {
+        "f&b": "restaurant",
+        "restaurant": "restaurant",
+        "education": "education",
+        "retail": "retail",
+    }
+    prev_industry = industry_map.get(prev_industry_raw)
+    industry = industry_map.get(raw_industry)
+    if industry:
+        org.industry = industry
 
-    # Education-specific fields
-    if payload.get("institution_type") is not None:
-        org.institution_type = payload.get("institution_type")
-    if payload.get("target_audience") is not None:
-        org.target_audience = payload.get("target_audience")
-    if payload.get("course_types") is not None:
-        org.course_types = payload.get("course_types")
-    if payload.get("delivery_mode") is not None:
-        org.delivery_mode = payload.get("delivery_mode")
-    if payload.get("intake_periods") is not None:
-        org.intake_periods = payload.get("intake_periods")
-    if payload.get("application_link") is not None:
-        org.application_link = payload.get("application_link")
-    if payload.get("response_time") is not None:
-        org.response_time = payload.get("response_time")
-    if payload.get("key_programs") is not None:
-        org.key_programs = payload.get("key_programs")
+    # If industry changed, clear old subtype row to avoid stale data
+    if industry and prev_industry and industry != prev_industry:
+        if industry != "restaurant":
+            OrganisationRestaurant.query.filter_by(
+                organisation_id=org.organisation_id
+            ).delete()
+        if industry != "education":
+            OrganisationEducation.query.filter_by(
+                organisation_id=org.organisation_id
+            ).delete()
+        if industry != "retail":
+            OrganisationRetail.query.filter_by(
+                organisation_id=org.organisation_id
+            ).delete()
 
-    # Retail-specific fields
-    if payload.get("retail_type") is not None:
-        org.retail_type = payload.get("retail_type")
-    if payload.get("product_categories") is not None:
-        org.product_categories = payload.get("product_categories")
-    if payload.get("has_physical_store") is not None:
-        org.has_physical_store = payload.get("has_physical_store")
-    if payload.get("has_online_store") is not None:
-        org.has_online_store = payload.get("has_online_store")
-    if payload.get("online_store_url") is not None:
-        org.online_store_url = payload.get("online_store_url")
-    if payload.get("delivery_options") is not None:
-        org.delivery_options = payload.get("delivery_options")
-    if payload.get("return_policy") is not None:
-        org.return_policy = payload.get("return_policy")
-    if payload.get("warranty_info") is not None:
-        org.warranty_info = payload.get("warranty_info")
-    if payload.get("payment_methods") is not None:
-        org.payment_methods = payload.get("payment_methods")
-    if payload.get("promotions_note") is not None:
-        org.promotions_note = payload.get("promotions_note")
+    # Industry-specific fields -> subtype tables
+    if industry == "restaurant":
+        restaurant = OrganisationRestaurant.query.get(org.organisation_id)
+        if not restaurant:
+            restaurant = OrganisationRestaurant(organisation_id=org.organisation_id)
+            db.session.add(restaurant)
+
+        if payload.get("cuisine_type") is not None:
+            restaurant.cuisine_type = payload.get("cuisine_type")
+        if payload.get("restaurant_style") is not None:
+            restaurant.restaurant_style = payload.get("restaurant_style")
+        if payload.get("dining_options") is not None:
+            restaurant.dining_options = payload.get("dining_options")
+        if payload.get("supports_reservations") is not None:
+            restaurant.supports_reservations = payload.get("supports_reservations")
+        if payload.get("reservation_link") is not None:
+            restaurant.reservation_link = payload.get("reservation_link")
+        if payload.get("price_range") is not None:
+            restaurant.price_range = payload.get("price_range")
+        if payload.get("seating_capacity") is not None:
+            restaurant.seating_capacity = payload.get("seating_capacity")
+        if payload.get("specialties") is not None:
+            restaurant.specialties = payload.get("specialties")
+
+    elif industry == "education":
+        education = OrganisationEducation.query.get(org.organisation_id)
+        if not education:
+            education = OrganisationEducation(organisation_id=org.organisation_id)
+            db.session.add(education)
+
+        if payload.get("institution_type") is not None:
+            education.institution_type = payload.get("institution_type")
+        if payload.get("target_audience") is not None:
+            education.target_audience = payload.get("target_audience")
+        if payload.get("course_types") is not None:
+            education.course_types = payload.get("course_types")
+        if payload.get("delivery_mode") is not None:
+            education.delivery_mode = payload.get("delivery_mode")
+        if payload.get("intake_periods") is not None:
+            education.intake_periods = payload.get("intake_periods")
+        if payload.get("application_link") is not None:
+            education.application_link = payload.get("application_link")
+        if payload.get("response_time") is not None:
+            education.response_time = payload.get("response_time")
+        if payload.get("key_programs") is not None:
+            education.key_programs = payload.get("key_programs")
+
+    elif industry == "retail":
+        retail = OrganisationRetail.query.get(org.organisation_id)
+        if not retail:
+            retail = OrganisationRetail(organisation_id=org.organisation_id)
+            db.session.add(retail)
+
+        if payload.get("retail_type") is not None:
+            retail.retail_type = payload.get("retail_type")
+        if payload.get("product_categories") is not None:
+            retail.product_categories = payload.get("product_categories")
+        if payload.get("has_physical_store") is not None:
+            retail.has_physical_store = payload.get("has_physical_store")
+        if payload.get("has_online_store") is not None:
+            retail.has_online_store = payload.get("has_online_store")
+        if payload.get("online_store_url") is not None:
+            retail.online_store_url = payload.get("online_store_url")
+        if payload.get("delivery_options") is not None:
+            retail.delivery_options = payload.get("delivery_options")
+        if payload.get("return_policy") is not None:
+            retail.return_policy = payload.get("return_policy")
+        if payload.get("warranty_info") is not None:
+            retail.warranty_info = payload.get("warranty_info")
+        if payload.get("payment_methods") is not None:
+            retail.payment_methods = payload.get("payment_methods")
+        if payload.get("promotions_note") is not None:
+            retail.promotions_note = payload.get("promotions_note")
 
     db.session.commit()
+    # Build response with subtype fields
+    restaurant = OrganisationRestaurant.query.get(org.organisation_id)
+    education = OrganisationEducation.query.get(org.organisation_id)
+    retail = OrganisationRetail.query.get(org.organisation_id)
+
     return {"ok": True, "organisation": {
         "organisation_id": org.organisation_id,
         "name": org.name,
@@ -276,30 +333,36 @@ def update_org_profile(payload: dict) -> dict:
         "contact_phone": org.contact_phone,
         "website_url": org.website_url,
         "business_hours": org.business_hours,
-        "cuisine_type": org.cuisine_type,
-        "restaurant_style": org.restaurant_style,
-        "dining_options": org.dining_options,
-        "supports_reservations": org.supports_reservations,
-        "reservation_link": org.reservation_link,
-        "price_range": org.price_range,
-        "seating_capacity": org.seating_capacity,
-        "specialties": org.specialties,
-        "institution_type": org.institution_type,
-        "target_audience": org.target_audience,
-        "course_types": org.course_types,
-        "delivery_mode": org.delivery_mode,
-        "intake_periods": org.intake_periods,
-        "application_link": org.application_link,
-        "response_time": org.response_time,
-        "key_programs": org.key_programs,
-        "retail_type": org.retail_type,
-        "product_categories": org.product_categories,
-        "has_physical_store": org.has_physical_store,
-        "has_online_store": org.has_online_store,
-        "online_store_url": org.online_store_url,
-        "delivery_options": org.delivery_options,
-        "return_policy": org.return_policy,
-        "warranty_info": org.warranty_info,
-        "payment_methods": org.payment_methods,
-        "promotions_note": org.promotions_note,
+        "restaurant": {
+            "cuisine_type": restaurant.cuisine_type if restaurant else None,
+            "restaurant_style": restaurant.restaurant_style if restaurant else None,
+            "dining_options": restaurant.dining_options if restaurant else None,
+            "supports_reservations": restaurant.supports_reservations if restaurant else None,
+            "reservation_link": restaurant.reservation_link if restaurant else None,
+            "price_range": restaurant.price_range if restaurant else None,
+            "seating_capacity": restaurant.seating_capacity if restaurant else None,
+            "specialties": restaurant.specialties if restaurant else None,
+        } if restaurant else None,
+        "education": {
+            "institution_type": education.institution_type if education else None,
+            "target_audience": education.target_audience if education else None,
+            "course_types": education.course_types if education else None,
+            "delivery_mode": education.delivery_mode if education else None,
+            "intake_periods": education.intake_periods if education else None,
+            "application_link": education.application_link if education else None,
+            "response_time": education.response_time if education else None,
+            "key_programs": education.key_programs if education else None,
+        } if education else None,
+        "retail": {
+            "retail_type": retail.retail_type if retail else None,
+            "product_categories": retail.product_categories if retail else None,
+            "has_physical_store": retail.has_physical_store if retail else None,
+            "has_online_store": retail.has_online_store if retail else None,
+            "online_store_url": retail.online_store_url if retail else None,
+            "delivery_options": retail.delivery_options if retail else None,
+            "return_policy": retail.return_policy if retail else None,
+            "warranty_info": retail.warranty_info if retail else None,
+            "payment_methods": retail.payment_methods if retail else None,
+            "promotions_note": retail.promotions_note if retail else None,
+        } if retail else None,
     }}
