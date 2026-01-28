@@ -52,7 +52,7 @@ class ChatbotService:
         }
         """
 
-        # 1) Intent detection using sklearn model
+        # 1) Intent detection (TF-IDF or embedding service)
         intent_result = self.intent_service.parse(message)
         intent = intent_result.get("intent", "fallback")
         confidence = float(intent_result.get("confidence", 0.0))

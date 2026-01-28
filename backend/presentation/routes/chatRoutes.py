@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 import traceback
 from backend.application.ai.chatbot_service import ChatbotService
-from backend.application.ai.intent_service import IntentService
+from backend.application.ai.intent_service_embed import EmbeddingIntentService
 from backend.application.ai.template_engine import TemplateEngine
 from backend.data_access.ai.company_profile_repo import CompanyProfileRepository
 from backend.data_access.ai.chatbot_repo import ChatbotRepository
@@ -19,7 +19,7 @@ def chat_welcome():
         company_repo = CompanyProfileRepository()
         template_repo = TemplateRepository()
         template_engine = TemplateEngine()
-        intent_service = IntentService()
+        intent_service = EmbeddingIntentService()
         chatbot_repo = ChatbotRepository()
         personality_repo = PersonalityRepository()
 
@@ -58,7 +58,7 @@ def chat():
         company_repo = CompanyProfileRepository()
         template_repo = TemplateRepository()
         template_engine = TemplateEngine()
-        intent_service = IntentService()
+        intent_service = EmbeddingIntentService()
         chatbot_repo = ChatbotRepository()
         personality_repo = PersonalityRepository()
 
