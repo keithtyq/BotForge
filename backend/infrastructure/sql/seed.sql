@@ -41,10 +41,21 @@ INSERT INTO subscription_features (subscription_id, feature_id, display_order) V
 (3, 1, 1), (3, 2, 2), (3, 3, 3);
 
 
-INSERT INTO organisation (name, industry, subscription_id) VALUES
-('Prata Rasa', 'F&B', 3),
-('Retailers', 'Retail', 2),
-('Edu', 'Education', 1);
+INSERT INTO organisation (
+  name,
+  industry,
+  subscription_id,
+  location,
+  city,
+  country,
+  contact_email,
+  contact_phone,
+  website_url,
+  business_hours
+) VALUES
+('Prata Rasa', 'F&B', 3, '123 Prata Street, Singapore 123456', 'Singapore', 'Singapore', 'contact@pratarasa.com', '+65 6123 4567', 'https://pratarasa.example.com', 'Mon-Sun 9:00 AM - 10:00 PM'),
+('Retailers', 'Retail', 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('Edu', 'Education', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- organisation 1: F&B (Restaurant profile)
 INSERT INTO organisation_restaurant (
