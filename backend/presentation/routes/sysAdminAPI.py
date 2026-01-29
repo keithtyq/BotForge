@@ -1,8 +1,10 @@
 from flask import Blueprint, request, jsonify
-from backend.models import Feedback, AppUser, Feature, FAQ, OrgRole, Organisation, SystemRole, OrgPermission, OrgRolePermission, Subscription, SubscriptionFeature
+from backend.models import Feedback, AppUser, Feature, FAQ, OrgRole, Organisation, SystemRole, OrgPermission, OrgRolePermission, Subscription, SubscriptionFeature, ChatMessage
 from backend import db
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import func
+from sqlalchemy import func, case
+from datetime import datetime, timedelta, timezone
+
 
 sysadmin_bp = Blueprint("sysadmin", __name__)
 
@@ -1085,4 +1087,84 @@ def update_subscription_features(subscription_id):
         "message": "Subscription features updated.",
         "subscription_id": subscription_id,
         "feature_ids": [fid for fid, _ in deduped]
+    }), 200
+
+
+@sysadmin_bp.get("/dashboard/user-status")
+def dashboard_user_status():
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    # status: True/False
+    active_count = db.session.query(func.count(AppUser.user_id)).filter(AppUser.status.is_(True)).scalar()
+    inactive_count = db.session.query(func.count(AppUser.user_id)).filter(AppUser.status.is_(False)).scalar()
+
+    return jsonify({
+        "ok": True,
+        "active": int(active_count or 0),
+        "inactive": int(inactive_count or 0),
+        "total": int((active_count or 0) + (inactive_count or 0))
+    }), 200
+
+
+from datetime import datetime, timedelta, timezone
+from sqlalchemy import func
+
+from datetime import datetime, timedelta, timezone
+from sqlalchemy import func
+
+@sysadmin_bp.get("/dashboard/daily-usage")
+def dashboard_daily_usage():
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    days = request.args.get("days", default=7, type=int)
+    metric = (request.args.get("metric") or "messages").strip().lower()
+
+    if days < 1 or days > 31:
+        return jsonify({"ok": False, "error": "days must be between 1 and 31."}), 400
+    if metric not in ("messages", "sessions"):
+        return jsonify({"ok": False, "error": "metric must be 'messages' or 'sessions'."}), 400
+
+    end_dt = datetime.now(timezone.utc)
+    start_dt = end_dt - timedelta(days=days - 1)
+
+    if metric == "messages":
+        rows = (
+            db.session.query(
+                func.date(ChatMessage.created_at).label("d"),
+                func.count(ChatMessage.message_id).label("c"),
+            )
+            .filter(ChatMessage.created_at >= start_dt)
+            .group_by(func.date(ChatMessage.created_at))
+            .order_by(func.date(ChatMessage.created_at).asc())
+            .all()
+        )
+    else:  # sessions
+        rows = (
+            db.session.query(
+                func.date(ChatMessage.created_at).label("d"),
+                func.count(func.distinct(ChatMessage.session_id)).label("c"),
+            )
+            .filter(ChatMessage.created_at >= start_dt)
+            .filter(ChatMessage.session_id.isnot(None))
+            .group_by(func.date(ChatMessage.created_at))
+            .order_by(func.date(ChatMessage.created_at).asc())
+            .all()
+        )
+
+    counts_by_date = {str(r.d): int(r.c) for r in rows}
+
+    series = []
+    for i in range(days):
+        day = (start_dt + timedelta(days=i)).date()
+        day_str = str(day)
+        series.append({"date": day_str, "count": counts_by_date.get(day_str, 0)})
+
+    return jsonify({
+        "ok": True,
+        "metric": metric,
+        "series": series
     }), 200
