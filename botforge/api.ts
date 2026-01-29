@@ -125,6 +125,13 @@ export const sysAdminService = {
     async updateUserRole(userId: number, data: { type: 'system' | 'org'; system_role_id?: number; org_role_id?: number }) {
         return api.put<any>(`/api/sysadmin/users/${userId}/role`, data);
     },
+    async getDashboardUserStatus() {
+        return api.get<any>('/api/sysadmin/dashboard/user-status');
+    },
+
+    async getDashboardDailyUsage(days: number = 7, metric: 'messages' | 'sessions' = 'messages') {
+        return api.get<any>(`/api/sysadmin/dashboard/daily-usage?days=${days}&metric=${metric}`);
+    },
 
     // FAQ Management
     async listFaqs() {
@@ -177,12 +184,7 @@ export const sysAdminService = {
         return api.post<any>('/api/sysadmin/testimonials/feature', { feedback_id: feedbackId, is_testimonial: isTestimonial });
     }
    
-export const sysAdminService = {
-    
-    async getAnalytics() {
-        return api.get<any>('/api/sysadmin/analytics');
-    }
-};
+
 };
 
 export const feedbackService = {
