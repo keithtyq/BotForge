@@ -176,6 +176,13 @@ export const sysAdminService = {
     async featureFeedback(feedbackId: number, isTestimonial: boolean) {
         return api.post<any>('/api/sysadmin/testimonials/feature', { feedback_id: feedbackId, is_testimonial: isTestimonial });
     }
+   
+export const sysAdminService = {
+    
+    async getAnalytics() {
+        return api.get<any>('/api/sysadmin/analytics');
+    }
+};
 };
 
 export const feedbackService = {
