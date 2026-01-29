@@ -1,123 +1,153 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  PieChart, Pie, Cell, LineChart, Line 
+} from 'recharts';
+import { Users, Building2, CreditCard, Activity, Download, Loader2 } from 'lucide-react';
+import { sysAdminService } from '../../api'; //
 
-import React, { useEffect, useRef } from 'react';
-
-// Declare Chart to prevent TypeScript errors since it's loaded via CDN in index.html
-declare const Chart: any;
+const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444'];
 
 export const AdminAnalytics: React.FC = () => {
-  const lineChartRef = useRef<HTMLCanvasElement>(null);
-  const pieChartRef = useRef<HTMLCanvasElement>(null);
-  const lineChartInstance = useRef<any>(null);
-  const pieChartInstance = useRef<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    totalOrgs: 0,
+    roleDistribution: [] as any[],
+    subscriptionStats: [] as any[]
+  });
 
   useEffect(() => {
-    // --- Initialize Line Chart ---
-    if (lineChartRef.current) {
-      // Destroy existing chart instance if it exists to prevent canvas reuse errors
-      if (lineChartInstance.current) {
-        lineChartInstance.current.destroy();
-      }
-
-      const ctxLine = lineChartRef.current.getContext('2d');
-      if (ctxLine) {
-        lineChartInstance.current = new Chart(ctxLine, {
-          type: 'line',
-          data: {
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            datasets: [
-              {
-                label: 'Users',
-                data: [400, 300, 550, 450, 600, 700, 650],
-                borderColor: '#3B82F6',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                tension: 0.4,
-                fill: true
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                display: false
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true
-              }
-            }
-          }
-        });
-      }
-    }
-
-    // --- Initialize Pie Chart ---
-    if (pieChartRef.current) {
-      if (pieChartInstance.current) {
-        pieChartInstance.current.destroy();
-      }
-
-      const ctxPie = pieChartRef.current.getContext('2d');
-      if (ctxPie) {
-        pieChartInstance.current = new Chart(ctxPie, {
-          type: 'doughnut',
-          data: {
-            labels: ['Active', 'Inactive（Over 1 Month）', 'Revoked'],
-            datasets: [
-              {
-                data: [60, 30, 10],
-                backgroundColor: ['#3B82F6', '#9CA3AF', '#F87171'],
-                borderWidth: 0
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                display: false
-              }
-            }
-          }
-        });
-      }
-    }
-
-    // Cleanup on unmount
-    return () => {
-      if (lineChartInstance.current) {
-        lineChartInstance.current.destroy();
-      }
-      if (pieChartInstance.current) {
-        pieChartInstance.current.destroy();
-      }
-    };
+    fetchStatistics();
   }, []);
 
-  return (
-    <div className="w-full">
-      <h2 className="text-2xl text-gray-800 font-normal mb-6">statistics</h2>
+  const fetchStatistics = async () => {
+    setLoading(true);
+    try {
+      // Connects to existing @sysadmin_bp.get("/users")
+      const userRes = await sysAdminService.listUsers();
+      // Connects to existing @sysadmin_bp.get("/subscriptions")
+      const subRes = await sysAdminService.listSubscriptions();
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Daily System Usage Chart */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm min-h-[350px]">
-          <h3 className="text-center text-sm font-medium text-gray-600 mb-4">Daily System Usage</h3>
-          <div className="h-64 w-full">
-            <canvas ref={lineChartRef} id="lineChart"></canvas>
+      if (userRes.ok && subRes.ok) {
+        processData(userRes.users, subRes.subscriptions);
+      }
+    } catch (err) {
+      console.error("Failed to fetch stats:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const processData = (users: any[], subs: any[]) => {
+    const active = users.filter(u => u.status).length;
+    
+    // Process Role Distribution
+    const roles: Record<string, number> = {};
+    users.forEach(u => {
+      const roleName = u.system_role_name || u.org_role_name || 'Unknown';
+      roles[roleName] = (roles[roleName] || 0) + 1;
+    });
+
+    const roleData = Object.keys(roles).map(name => ({ name, value: roles[name] }));
+
+    // Process Organisation metrics
+    const uniqueOrgs = new Set(users.map(u => u.organisation_id).filter(id => id !== null));
+
+    setData({
+      totalUsers: users.length,
+      activeUsers: active,
+      totalOrgs: uniqueOrgs.size,
+      roleDistribution: roleData,
+      subscriptionStats: subs.map(s => ({
+        name: s.name,
+        price: s.price,
+        status: s.status === 0 ? 'Active' : 'Inactive'
+      }))
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-800">System Statistics & Reporting</h1>
+        <button 
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          onClick={() => window.print()}
+        >
+          <Download className="h-4 w-4" /> Export Report
+        </button>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard title="Total Users" value={data.totalUsers} icon={<Users />} color="blue" />
+        <StatCard title="Active Now" value={data.activeUsers} icon={<Activity />} color="green" />
+        <StatCard title="Organisations" value={data.totalOrgs} icon={<Building2 />} color="purple" />
+        <StatCard title="Active Plans" value={data.subscriptionStats.length} icon={<CreditCard />} color="orange" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* User Role Distribution */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold mb-4 text-gray-700">User Role Distribution</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={data.roleDistribution}
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {data.roleDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* User Account Status Chart */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm min-h-[350px] flex flex-col items-center">
-          <h3 className="text-center text-sm font-medium text-gray-600 mb-4">User Account Status</h3>
-          <div className="h-64 w-64 flex items-center justify-center">
-            <canvas ref={pieChartRef} id="pieChart"></canvas>
+        {/* Subscription Pricing Overview */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold mb-4 text-gray-700">Plan Pricing Overview ($)</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.subscriptionStats}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="price" fill="#2563eb" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+const StatCard = ({ title, value, icon, color }: any) => (
+  <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+    <div className={`p-3 rounded-lg bg-${color}-50 text-${color}-600`}>
+      {React.cloneElement(icon, { className: 'h-6 w-6' })}
+    </div>
+    <div>
+      <p className="text-sm text-gray-500 font-medium">{title}</p>
+      <p className="text-2xl font-bold text-gray-800">{value}</p>
+    </div>
+  </div>
+);
