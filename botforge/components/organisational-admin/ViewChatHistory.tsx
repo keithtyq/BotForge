@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, Calendar, Download } from 'lucide-react';
-import { orgAdminService } from '../../api';
+import { orgAdminService, operatorService } from '../../api';
 
 interface ViewChatHistoryProps {
     onBack: () => void;
     organisationId?: number;
+    role?: string;
 }
 
-export const ViewChatHistory: React.FC<ViewChatHistoryProps> = ({ onBack, organisationId }) => {
+export const ViewChatHistory: React.FC<ViewChatHistoryProps> = ({ onBack, organisationId, role }) => {
     const [history, setHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [filters, setFilters] = useState({
@@ -26,7 +27,8 @@ export const ViewChatHistory: React.FC<ViewChatHistoryProps> = ({ onBack, organi
         if (!organisationId) return;
         setLoading(true);
         try {
-            const res = await orgAdminService.getChatHistory(organisationId, filters);
+            const service = role === 'STAFF' ? operatorService : orgAdminService;
+            const res = await service.getChatHistory(organisationId, filters);
             if (res.ok) {
                 setHistory(res.messages || []);
             }
@@ -120,9 +122,9 @@ export const ViewChatHistory: React.FC<ViewChatHistoryProps> = ({ onBack, organi
                                             </span>
                                         </div>
                                         <span className="text-xs text-gray-400">
-                                        {msg.timestamp
-                                            ? new Date(msg.timestamp).toLocaleString()
-                                            : ''}
+                                            {msg.timestamp
+                                                ? new Date(msg.timestamp).toLocaleString()
+                                                : ''}
                                         </span>
                                     </div>
                                     <p className="text-sm text-gray-600 italic">"{msg.message}"</p>
