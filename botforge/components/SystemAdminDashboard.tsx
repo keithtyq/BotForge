@@ -11,9 +11,12 @@ import { PricingManagement } from './admin/PricingManagement';
 import { FeatureManagement } from './admin/FeatureManagement';
 import { FAQManagement } from './admin/FAQManagement';
 
+import { UserProfile } from './common/UserProfile';
+
 interface SystemAdminDashboardProps {
   onLogout: () => void;
   onBackToDashboard: () => void;
+  user: any;
 }
 
 export type AdminView =
@@ -25,9 +28,10 @@ export type AdminView =
   | 'feedback'
   | 'features'
   | 'pricing'
-  | 'faq';
+  | 'faq'
+  | 'profile';
 
-export const SystemAdminDashboard: React.FC<SystemAdminDashboardProps> = ({ onLogout, onBackToDashboard }) => {
+export const SystemAdminDashboard: React.FC<SystemAdminDashboardProps> = ({ onLogout, onBackToDashboard, user }) => {
   const [currentView, setCurrentView] = useState<AdminView>('login');
 
   const handleAdminLogin = () => {
@@ -71,7 +75,12 @@ export const SystemAdminDashboard: React.FC<SystemAdminDashboardProps> = ({ onLo
             <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-gray-900 font-medium">Hi, xxx</span>
+            <button
+              onClick={() => setCurrentView('profile')}
+              className="text-gray-900 font-medium hover:text-blue-600 transition-colors"
+            >
+              Hi, {user?.username || 'SysAdmin'}
+            </button>
             <button
               onClick={onLogout}
               className="text-gray-900 font-medium hover:text-red-600 transition-colors"
@@ -85,50 +94,51 @@ export const SystemAdminDashboard: React.FC<SystemAdminDashboardProps> = ({ onLo
       <main className="p-8 max-w-[1400px] mx-auto">
         {/* Navigation Bar */}
         <div className="flex flex-wrap gap-[-1px] mb-12">
-          <div className="flex gap-0 border border-gray-400 rounded-lg overflow-hidden divide-x divide-gray-400">
-            <button
-              onClick={() => setCurrentView('user-admin')}
-              className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'user-admin' ? 'bg-gray-100' : 'bg-white'}`}
-            >
-              User administration
+          {currentView !== 'profile' && (
+            <div className="flex gap-0 border border-gray-400 rounded-lg overflow-hidden divide-x divide-gray-400">
+              <button
+                onClick={() => setCurrentView('user-admin')}
+                className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'user-admin' ? 'bg-gray-100' : 'bg-white'}`}
+              >
+                User administration
+              </button>
+              <button
+                onClick={() => setCurrentView('maintenance')}
+                className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'maintenance' ? 'bg-gray-100' : 'bg-white'}`}
+              >
+                System maintenance
+              </button>
+              <button
+                onClick={() => setCurrentView('feedback')}
+                className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'feedback' ? 'bg-gray-100' : 'bg-white'}`}
+              >
+                Manage Testimonials
+              </button>
+              <button
+                onClick={() => setCurrentView('features')}
+                className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'features' ? 'bg-gray-100' : 'bg-white'}`}
+              >
+                Change Features
+              </button>
+              <button
+                onClick={() => setCurrentView('pricing')}
+                className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'pricing' ? 'bg-gray-100' : 'bg-white'}`}
+              >
+                Change Pricing
+              </button>
+              <button
+                onClick={() => setCurrentView('faq')}
+                className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'faq' ? 'bg-gray-100' : 'bg-white'}`}
+              >
+                Manage FAQ
+              </button>
+            </div>
+          )}
+          {currentView === 'profile' && (
+            <button onClick={() => setCurrentView('stats')} className="flex items-center text-blue-600 hover:underline">
+              &larr; Back to Dashboard
             </button>
-            {/* <button
-              onClick={() => setCurrentView('ai-model')}
-              className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'ai-model' ? 'bg-gray-100' : 'bg-white'}`}
-            >
-              AI Model management
-            </button> */}
-            <button
-              onClick={() => setCurrentView('maintenance')}
-              className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'maintenance' ? 'bg-gray-100' : 'bg-white'}`}
-            >
-              System maintenance
-            </button>
-            <button
-              onClick={() => setCurrentView('feedback')}
-              className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'feedback' ? 'bg-gray-100' : 'bg-white'}`}
-            >
-              Manage Testimonials
-            </button>
-            <button
-              onClick={() => setCurrentView('features')}
-              className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'features' ? 'bg-gray-100' : 'bg-white'}`}
-            >
-              Change Features
-            </button>
-            <button
-              onClick={() => setCurrentView('pricing')}
-              className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'pricing' ? 'bg-gray-100' : 'bg-white'}`}
-            >
-              Change Pricing
-            </button>
-            <button
-              onClick={() => setCurrentView('faq')}
-              className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'faq' ? 'bg-gray-100' : 'bg-white'}`}
-            >
-              Manage FAQ
-            </button>
-          </div>
+          )}
         </div>
 
         {/* Content Area */}
@@ -141,6 +151,7 @@ export const SystemAdminDashboard: React.FC<SystemAdminDashboardProps> = ({ onLo
           {currentView === 'pricing' && <PricingManagement />}
           {currentView === 'features' && <FeatureManagement />}
           {currentView === 'faq' && <FAQManagement />}
+          {currentView === 'profile' && <UserProfile role="sysadmin" user={user} />}
         </div>
       </main>
     </div>

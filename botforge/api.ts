@@ -102,6 +102,14 @@ export const featureService = {
 };
 
 export const sysAdminService = {
+    async updateProfile(data: { user_id: number; username?: string; email?: string }) {
+        return api.put<any>('/api/sysadmin/profile', data);
+    },
+
+    async changePassword(data: any) {
+        return api.put<any>('/api/sysadmin/password', data);
+    },
+
     // Feature Management
     async listFeatures() {
         return api.get<any>('/api/sysadmin/features');
@@ -209,6 +217,10 @@ export const orgAdminService = {
         return api.put<any>('/api/org-admin/profile', data);
     },
 
+    async changePassword(data: any) {
+        return api.put<any>('/api/org-admin/password', data);
+    },
+
     async updateUserRole(userId: number, newRoleId: number) {
         return api.put<any>(`/api/org-admin/users/${userId}/role`, { new_org_role_id: newRoleId });
     },
@@ -236,6 +248,16 @@ export const orgAdminService = {
     async getChatbotAnalytics(organisationId: number, params: { from?: string; to?: string } = {}) {
         const query = new URLSearchParams(params as any);
         return api.get<any>(`/api/org-admin/analytics?organisation_id=${organisationId}&${query.toString()}`);
+    }
+};
+
+export const operatorService = {
+    async updateProfile(data: { user_id: number; username?: string; email?: string }) {
+        return api.put<any>('/api/operator/profile', data);
+    },
+
+    async changePassword(data: any) {
+        return api.put<any>('/api/operator/password', data);
     }
 };
 
