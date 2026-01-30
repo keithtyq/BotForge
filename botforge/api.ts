@@ -121,6 +121,10 @@ export const sysAdminService = {
     async updateUserStatus(userId: number, status: boolean) {
         return api.put<any>(`/api/sysadmin/users/${userId}/status`, { status });
     },
+    
+    async listOrgRoles(organisationId: number) {
+        return api.get<any>(`/api/sysadmin/org-roles?organisation_id=${organisationId}`);
+    },
 
     async updateUserRole(userId: number, data: { type: 'system' | 'org'; system_role_id?: number; org_role_id?: number }) {
         return api.put<any>(`/api/sysadmin/users/${userId}/role`, data);
