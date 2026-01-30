@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { orgAdminService } from '../../api';
+import { orgAdminService, operatorService } from '../../api';
 
 interface CustomizeChatbotProps {
   onBack: () => void;
   organisationId?: number;
+  role?: string;
 }
 
-export const CustomizeChatbot: React.FC<CustomizeChatbotProps> = ({ onBack, organisationId }) => {
+export const CustomizeChatbot: React.FC<CustomizeChatbotProps> = ({ onBack, organisationId, role }) => {
   const [settings, setSettings] = useState({
     name: '',
     description: '',
@@ -29,15 +30,17 @@ export const CustomizeChatbot: React.FC<CustomizeChatbotProps> = ({ onBack, orga
   const loadData = async () => {
     setLoading(true);
     try {
+      const service = role === 'STAFF' ? operatorService : orgAdminService;
+
       // Load Personalities
-      const pRes = await orgAdminService.listPersonalities();
+      const pRes = await service.listPersonalities();
       if (pRes.ok) {
         setPersonalities(pRes.personalities);
       }
 
       // Load Settings
       if (organisationId) {
-        const cRes = await orgAdminService.getChatbotSettings(organisationId);
+        const cRes = await service.getChatbotSettings(organisationId);
         if (cRes.ok && cRes.chatbot) {
           setSettings({
             name: cRes.chatbot.name || '',
@@ -64,7 +67,8 @@ export const CustomizeChatbot: React.FC<CustomizeChatbotProps> = ({ onBack, orga
     setSaving(true);
     setMessage('');
     try {
-      const res = await orgAdminService.updateChatbotSettings(organisationId, settings);
+      const service = role === 'STAFF' ? operatorService : orgAdminService;
+      const res = await service.updateChatbotSettings(organisationId, settings);
       if (res.ok) {
         setMessage('Settings saved successfully!');
         // Update local state with returned data just in case

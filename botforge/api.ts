@@ -258,6 +258,35 @@ export const operatorService = {
 
     async changePassword(data: any) {
         return api.put<any>('/api/operator/password', data);
+    },
+
+    async deleteAccount(userId: number) {
+        return api.request<any>('/api/operator/account', 'DELETE', { user_id: userId });
+    },
+
+    // Chatbot Management
+    async getChatbotSettings(organisationId: number) {
+        return api.get<any>(`/api/operator/chatbot?organisation_id=${organisationId}`);
+    },
+
+    async updateChatbotSettings(organisationId: number, data: any) {
+        return api.put<any>(`/api/operator/chatbot?organisation_id=${organisationId}`, data);
+    },
+
+    async listPersonalities() {
+        return api.get<any>('/api/operator/personalities');
+    },
+
+    // Chat History
+    async getChatHistory(organisationId: number, params: { q?: string; from?: string; to?: string; page?: number; page_size?: number } = {}) {
+        const query = new URLSearchParams(params as any);
+        return api.get<any>(`/api/operator/chat-history?organisation_id=${organisationId}&${query.toString()}`);
+    },
+
+    // Analytics
+    async getChatbotAnalytics(organisationId: number, params: { from?: string; to?: string } = {}) {
+        const query = new URLSearchParams(params as any);
+        return api.get<any>(`/api/operator/analytics?organisation_id=${organisationId}&${query.toString()}`);
     }
 };
 

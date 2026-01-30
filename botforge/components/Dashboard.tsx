@@ -65,7 +65,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
     const fetchAnalytics = async () => {
         if (!user?.organisation_id) return;
         setLoading(true);
-        const res = await import('../api').then(m => m.orgAdminService.getChatbotAnalytics(user.organisation_id!, dateRange));
+        const res = await import('../api').then(m => {
+            const service = isStaff ? m.operatorService : m.orgAdminService;
+            return service.getChatbotAnalytics(user.organisation_id!, dateRange);
+        });
+
         if (res.ok) {
             setAnalyticsData(res);
         } else {
@@ -406,12 +410,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
 
                     {/* Shared Tabs (Customise) */}
                     {activeTab === 'customise' && (
-                        <AdminCustomize onBack={() => setActiveTab('analytics')} organisationId={user?.organisation_id} />
+                        <AdminCustomize onBack={() => setActiveTab('analytics')} organisationId={user?.organisation_id} role={user?.org_role_name} />
                     )}
 
                     {/* Shared Tabs (History) */}
                     {activeTab === 'history' && (
-                        <AdminHistory onBack={() => setActiveTab('analytics')} organisationId={user?.organisation_id} />
+                        <AdminHistory onBack={() => setActiveTab('analytics')} organisationId={user?.organisation_id} role={user?.org_role_name} />
                     )}
 
                     {/* Shared Tabs (Feedback) */}
