@@ -99,7 +99,7 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
         } />
 
         <Route path="/system-admin" element={
-          isAdmin ? <SystemAdminDashboard onLogout={handleLogout} onBackToDashboard={() => navigate('/dashboard')} /> : <Navigate to="/dashboard" />
+          isAdmin ? <SystemAdminDashboard onLogout={handleLogout} onBackToDashboard={() => navigate('/dashboard')} user={user} /> : <Navigate to="/dashboard" />
         } />
 
         {/* Ensure the route exists for the profile page */}

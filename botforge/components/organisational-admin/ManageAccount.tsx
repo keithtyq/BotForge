@@ -329,6 +329,78 @@ export const ManageAccount: React.FC<ManageAccountProps> = ({ onBack }) => {
 
             </div>
 
+            {/* Security Section */}
+            <h2 className="text-lg font-bold mb-6 text-black border-b border-gray-100 pb-4">Security</h2>
+            <div className="space-y-6 mb-12 max-w-md">
+                <div>
+                    <label className="block text-sm font-bold text-gray-900 mb-2">Change Password</label>
+                    <p className="text-sm text-gray-500 mb-4">Ensure your account is using a long, random password to stay secure.</p>
+
+                    <div className="space-y-4">
+                        <input
+                            type="password"
+                            placeholder="Current Password"
+                            className="w-full p-2 border border-gray-300 rounded text-sm"
+                            id="old-password"
+                        />
+                        <input
+                            type="password"
+                            placeholder="New Password"
+                            className="w-full p-2 border border-gray-300 rounded text-sm"
+                            id="new-password"
+                        />
+                        <input
+                            type="password"
+                            placeholder="Confirm New Password"
+                            className="w-full p-2 border border-gray-300 rounded text-sm"
+                            id="confirm-password"
+                        />
+                        <button
+                            onClick={async () => {
+                                const oldP = (document.getElementById('old-password') as HTMLInputElement).value;
+                                const newP = (document.getElementById('new-password') as HTMLInputElement).value;
+                                const confirmP = (document.getElementById('confirm-password') as HTMLInputElement).value;
+
+                                if (!oldP || !newP || !confirmP) {
+                                    alert("Please fill all password fields");
+                                    return;
+                                }
+                                if (newP !== confirmP) {
+                                    alert("New passwords do not match");
+                                    return;
+                                }
+
+                                setIsSaving(true);
+                                try {
+                                    const res = await orgAdminService.changePassword({
+                                        user_id: user?.user_id,
+                                        old_password: oldP,
+                                        new_password: newP,
+                                        confirm_password: confirmP
+                                    });
+                                    if (res.message) {
+                                        setSuccessMsg("Password changed successfully");
+                                        (document.getElementById('old-password') as HTMLInputElement).value = '';
+                                        (document.getElementById('new-password') as HTMLInputElement).value = '';
+                                        (document.getElementById('confirm-password') as HTMLInputElement).value = '';
+                                    } else {
+                                        alert(res.error || "Failed to change password");
+                                    }
+                                } catch (e) {
+                                    alert("Error changing password");
+                                } finally {
+                                    setIsSaving(false);
+                                }
+                            }}
+                            disabled={isSaving}
+                            className="px-4 py-2 bg-black text-white rounded text-sm font-bold hover:bg-gray-800 disabled:opacity-50"
+                        >
+                            {isSaving ? "Updating..." : "Update Password"}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {/* Company Profile Section */}
             <div className="max-w-md">
                 <div className="flex justify-between items-center mb-6">
