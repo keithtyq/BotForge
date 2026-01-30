@@ -63,16 +63,135 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
         }
     };
 
+    const [showInviteModal, setShowInviteModal] = useState(false);
+    const [inviteEmail, setInviteEmail] = useState('');
+    const [inviteLoading, setInviteLoading] = useState(false);
+    const [inviteResult, setInviteResult] = useState<{ token: string; link: string } | null>(null);
+
+    const handleInvite = async () => {
+        if (!inviteEmail || !inviteEmail.includes('@')) {
+            alert("Please enter a valid email.");
+            return;
+        }
+        if (!currentUser?.organisation_id) return;
+
+        setInviteLoading(true);
+        try {
+            const res = await orgAdminService.sendInvitation({
+                email: inviteEmail,
+                organisation_id: currentUser.organisation_id,
+                invited_by_user_id: currentUser.user_id
+            });
+            if (res.ok) {
+                setInviteResult({ token: res.token, link: res.signup_link });
+                setInviteEmail('');
+            } else {
+                alert("Error: " + res.error);
+            }
+        } catch (e) {
+            alert("Failed to send invitation.");
+        }
+        setInviteLoading(false);
+    };
+
+    const copyLink = () => {
+        if (inviteResult?.link) {
+            navigator.clipboard.writeText(inviteResult.link);
+            alert("Link copied to clipboard!");
+        }
+    };
+
+    const closeInviteModal = () => {
+        setShowInviteModal(false);
+        setInviteResult(null);
+        setInviteEmail('');
+    };
+
     if (isLoading) return <div className="p-10 flex justify-center"><Loader2 className="animate-spin" /></div>;
 
     return (
-        <div className="animate-in fade-in duration-500">
-            <div className="mb-6">
+        <div className="animate-in fade-in duration-500 relative">
+            {/* Invitation Modal */}
+            {showInviteModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+                        <div className="p-6 border-b border-gray-100">
+                            <h3 className="text-xl font-bold text-gray-900">Invite New Staff</h3>
+                            <p className="text-sm text-gray-500 mt-1">Send an invitation to join your organisation.</p>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            {!inviteResult ? (
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
+                                    <input
+                                        type="email"
+                                        value={inviteEmail}
+                                        onChange={(e) => setInviteEmail(e.target.value)}
+                                        placeholder="colleague@company.com"
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:border-blue-500 mb-4"
+                                    />
+                                    <div className="flex justify-end gap-3">
+                                        <button
+                                            onClick={closeInviteModal}
+                                            className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleInvite}
+                                            disabled={inviteLoading}
+                                            className={`px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors ${inviteLoading ? 'opacity-70 cursor-wait' : ''}`}
+                                        >
+                                            {inviteLoading ? 'Sending...' : 'Send Invite'}
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-4">
+                                    <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Save className="w-8 h-8" />
+                                    </div>
+                                    <h4 className="text-lg font-bold text-gray-900 mb-2">Invitation Created!</h4>
+                                    <p className="text-sm text-gray-600 mb-6">
+                                        Share this link with your colleague to let them sign up.
+                                    </p>
+
+                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-6 break-all font-mono text-sm text-gray-600">
+                                        {inviteResult.link}
+                                    </div>
+
+                                    <button
+                                        onClick={copyLink}
+                                        className="w-full bg-gray-900 text-white font-bold py-3 rounded-lg hover:bg-gray-800 transition-colors mb-3"
+                                    >
+                                        Copy Link
+                                    </button>
+                                    <button
+                                        onClick={closeInviteModal}
+                                        className="w-full text-gray-500 font-bold py-2 hover:text-gray-800"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="mb-6 flex justify-between items-center">
                 <button
                     onClick={onBack}
                     className="text-gray-500 hover:text-gray-900 text-sm flex items-center font-medium transition-colors"
                 >
                     <span className="text-lg mr-2 leading-none">‹</span> Back to Dashboard
+                </button>
+                <button
+                    onClick={() => setShowInviteModal(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors flex items-center gap-2"
+                >
+                    <User className="w-4 h-4" /> Invite Staff
                 </button>
             </div>
 
@@ -92,7 +211,7 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm text-gray-600">Role:</span>
-                                    <select 
+                                    <select
                                         value={u.org_role_id || ''}
                                         onChange={(e) => handleUserRoleChange(u.user_id, Number(e.target.value))}
                                         className="border border-gray-300 rounded px-2 py-1 text-sm bg-gray-50"
@@ -120,7 +239,7 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
                                     {role.description && <span className="text-gray-500 font-normal text-xs ml-2">- {role.description}</span>}
                                 </div>
                                 <div className="flex gap-3">
-                                    <button 
+                                    <button
                                         onClick={() => handleDeleteRole(role.id)}
                                         className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-1.5 rounded text-sm font-bold transition-colors flex items-center gap-2"
                                     >

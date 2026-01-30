@@ -248,6 +248,11 @@ export const orgAdminService = {
     async getChatbotAnalytics(organisationId: number, params: { from?: string; to?: string } = {}) {
         const query = new URLSearchParams(params as any);
         return api.get<any>(`/api/org-admin/analytics?organisation_id=${organisationId}&${query.toString()}`);
+    },
+
+    // Invitations
+    async sendInvitation(data: { email: string; organisation_id: number; invited_by_user_id: number }) {
+        return api.post<any>('/api/admin/invitations', data);
     }
 };
 
