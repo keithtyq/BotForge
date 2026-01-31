@@ -24,7 +24,7 @@ export type AdminView =
   | 'stats'
   | 'user-admin'
   // | 'ai-model' // Removed
-  | 'maintenance'
+  //| 'maintenance' // Removed
   | 'feedback'
   | 'features'
   | 'pricing'

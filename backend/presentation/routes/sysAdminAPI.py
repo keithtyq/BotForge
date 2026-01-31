@@ -1120,6 +1120,8 @@ def dashboard_user_status():
     if err:
         return err
 
+    base_filter = AppUser.system_role_id.is_(None)
+
     # status: True/False
     active_count = db.session.query(func.count(AppUser.user_id)).filter(AppUser.status.is_(True)).scalar()
     inactive_count = db.session.query(func.count(AppUser.user_id)).filter(AppUser.status.is_(False)).scalar()
