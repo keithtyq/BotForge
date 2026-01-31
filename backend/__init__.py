@@ -6,15 +6,11 @@ import os
 
 db = SQLAlchemy()
 
-
 def create_app():
     load_dotenv()
 
     app = Flask(__name__)
 
-    # --------------------
-    # Core config
-    # --------------------
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret")
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -35,25 +31,25 @@ def create_app():
     }
 
     db.init_app(app)
-    
-    def cors_origin_validator(origin):
-        # Allow same-origin / server-side calls
-        if origin is None:
-            return True
-
-        if origin == "https://botforge-1.onrender.com":
-            return True
-
-        if origin.startswith("https://"):
-            return True
-
-        return False
 
     CORS(
         app,
-        origins=cors_origin_validator,
-        supports_credentials=False,   # IMPORTANT for embeds
-        resources={r"/api/*": {"origins": cors_origin_validator}},
+        resources={r"/api/public/*": {"origins": "*"}},
+        supports_credentials=False,
+    )
+
+    # protected routes CORS
+    CORS(
+        app,
+        resources={
+            r"/api/admin/*": {"origins": ["https://botforge-1.onrender.com"]},
+            r"/api/operator/*": {"origins": ["https://botforge-1.onrender.com"]},
+            r"/api/sysadmin/*": {"origins": ["https://botforge-1.onrender.com"]},
+            r"/api/org-admin/*": {"origins": ["https://botforge-1.onrender.com"]},
+            r"/api/org-roles/*": {"origins": ["https://botforge-1.onrender.com"]},
+            r"/api/notifications/*": {"origins": ["https://botforge-1.onrender.com"]},
+        },
+        supports_credentials=True,
     )
 
     from presentation.routes.unregisteredAPI import unregistered_bp
@@ -81,7 +77,7 @@ def create_app():
     app.register_blueprint(subscriptions_bp, url_prefix="/api")
     app.register_blueprint(org_admin_bp, url_prefix="/api/org-admin")
     app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
-
+    
     @app.get("/health")
     def health():
         return {"ok": True}
