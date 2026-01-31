@@ -1,46 +1,63 @@
 import numpy as np
 from sentence_transformers import SentenceTransformer
-
 from application.ai.intent_training_data import INTENT_EXAMPLES
 
+_model = None
+_intent_embeddings = None
+_intent_labels = None
 
-class EmbeddingIntentService:
-    """
-    Intent detection using sentence embeddings + cosine similarity.
-    This is a lightweight pretrained alternative to the TF-IDF model.
-    """
+def get_model():
+    global _model
+    if _model is None:
+        _model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+    return _model
 
-    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
-        self.model = SentenceTransformer(model_name)
-        self._intent_texts: list[str] = []
-        self._intent_labels: list[str] = []
+
+def get_intent_data():
+    global _intent_embeddings, _intent_labels
+
+    if _intent_embeddings is None or _intent_labels is None:
+        model = get_model()
+
+        texts = []
+        labels = []
 
         for intent, examples in INTENT_EXAMPLES.items():
             for ex in examples:
-                self._intent_texts.append(ex)
-                self._intent_labels.append(intent)
+                texts.append(ex)
+                labels.append(intent)
 
-        # Precompute embeddings for all example phrases
-        self._intent_embeddings = self.model.encode(
-            self._intent_texts,
+        embeddings = model.encode(
+            texts,
             normalize_embeddings=True,
             convert_to_numpy=True,
         )
 
+        _intent_embeddings = embeddings
+        _intent_labels = labels
+
+    return _intent_embeddings, _intent_labels
+
+
+class EmbeddingIntentService:
     def parse(self, message: str) -> dict:
         if not message or not message.strip():
             return {"intent": "fallback", "confidence": 0.0, "entities": []}
 
-        query_emb = self.model.encode(
+        model = get_model()
+        intent_embeddings, intent_labels = get_intent_data()
+
+        query_emb = model.encode(
             [message],
             normalize_embeddings=True,
             convert_to_numpy=True,
         )[0]
 
-        # Cosine similarity since vectors are normalized
-        sims = np.dot(self._intent_embeddings, query_emb)
+        sims = np.dot(intent_embeddings, query_emb)
         best_idx = int(np.argmax(sims))
-        best_intent = self._intent_labels[best_idx]
-        confidence = float(sims[best_idx])
 
-        return {"intent": best_intent, "confidence": confidence, "entities": []}
+        return {
+            "intent": intent_labels[best_idx],
+            "confidence": float(sims[best_idx]),
+            "entities": [],
+        }

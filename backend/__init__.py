@@ -33,18 +33,18 @@ def create_app():
     db.init_app(app)
     cors.init_app(app, resources={r"/*": {"origins": "*"}})
 
-    from backend.presentation.routes.unregisteredAPI import unregistered_bp
-    from backend.presentation.routes.faqAPI import faq_bp
-    from backend.presentation.routes.adminAPI import admin_bp
-    from backend.presentation.routes.operatorAPI import operator_bp
-    from backend.presentation.routes.sysAdminAPI import sysadmin_bp
-    from backend.presentation.routes.featuresAPI import features_bp
-    from backend.presentation.routes.feedbackAPI import feedback_bp
-    from backend.presentation.routes.chatRoutes import chat_bp
-    from backend.presentation.routes.orgRoleAPI import org_roles_bp
-    from backend.presentation.routes.subscriptionsAPI import subscriptions_bp
-    from backend.presentation.routes.orgAdminAPI import org_admin_bp
-    from backend.presentation.routes.notificationsAPI import notifications_bp
+    from presentation.routes.unregisteredAPI import unregistered_bp
+    from presentation.routes.faqAPI import faq_bp
+    from presentation.routes.adminAPI import admin_bp
+    from presentation.routes.operatorAPI import operator_bp
+    from presentation.routes.sysAdminAPI import sysadmin_bp
+    from presentation.routes.featuresAPI import features_bp
+    from presentation.routes.feedbackAPI import feedback_bp
+    from presentation.routes.chatRoutes import chat_bp
+    from presentation.routes.orgRoleAPI import org_roles_bp
+    from presentation.routes.subscriptionsAPI import subscriptions_bp
+    from presentation.routes.orgAdminAPI import org_admin_bp
+    from presentation.routes.notificationsAPI import notifications_bp
     
     app.register_blueprint(unregistered_bp, url_prefix="/api/public")
     app.register_blueprint(faq_bp, url_prefix="/api/public")
