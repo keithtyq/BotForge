@@ -1,5 +1,5 @@
-from backend import db
-from backend.models import (
+from __init__ import db
+from models import (
     Organisation,
     OrganisationRestaurant,
     OrganisationEducation,

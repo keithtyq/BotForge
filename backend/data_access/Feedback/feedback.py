@@ -1,5 +1,5 @@
-from backend import db
-from backend.models import Feedback
+from __init__ import db
+from models import Feedback
 
 
 class FeedbackRepository:
