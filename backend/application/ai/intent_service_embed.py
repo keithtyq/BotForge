@@ -1,7 +1,7 @@
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-from backend.application.ai.intent_training_data import INTENT_EXAMPLES
+from application.ai.intent_training_data import INTENT_EXAMPLES
 
 
 class EmbeddingIntentService:

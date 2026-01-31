@@ -1,4 +1,3 @@
-# backend/application/ai/intent_model.py
 
 import os
 from typing import List, Tuple
@@ -10,7 +9,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 import joblib
 
-from backend.application.ai.intent_training_data import INTENT_EXAMPLES
+from application.ai.intent_training_data import INTENT_EXAMPLES
 
 
 def build_training_data() -> Tuple[List[str], List[str]]:

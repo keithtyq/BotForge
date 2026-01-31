@@ -1,4 +1,4 @@
-from backend.infrastructure.mongodb.chat_messages import ChatMessage
+from infrastructure.mongodb.chat_messages import ChatMessage
 
 class ChatMessageService:
     """

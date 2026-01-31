@@ -1,5 +1,5 @@
-from backend import db
-from backend.models import OrgRole
+from __init__ import db
+from models import OrgRole
 from sqlalchemy.exc import IntegrityError
 
 

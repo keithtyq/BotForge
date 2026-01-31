@@ -3,19 +3,19 @@ from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash
 from sqlalchemy.exc import IntegrityError
 
-from backend import db
-from backend.application.invitation_service import (
+from __init__ import db
+from application.invitation_service import (
     validate_invitation_token,
     accept_invitation_and_create_operator
 )
-from backend.application.user_profile_service import UserProfileService
-from backend.application.notification_service import NotificationService
-from backend.data_access.Users.users import UserRepository
-from backend.data_access.Notifications.notifications import NotificationRepository
-from backend.models import Organisation, Chatbot, Personality, AppUser
+from application.user_profile_service import UserProfileService
+from application.notification_service import NotificationService
+from data_access.Users.users import UserRepository
+from data_access.Notifications.notifications import NotificationRepository
+from models import Organisation, Chatbot, Personality, AppUser
 
-from backend.infrastructure.mongodb.mongo_client import get_mongo_db
-from backend.data_access.ChatMessages.chatMessages import ChatMessageRepository
+from infrastructure.mongodb.mongo_client import get_mongo_db
+from data_access.ChatMessages.chatMessages import ChatMessageRepository
 
 operator_bp = Blueprint("operator", __name__, url_prefix="/api/operator")
 

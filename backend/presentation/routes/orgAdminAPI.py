@@ -1,15 +1,15 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.exc import IntegrityError
-from backend import db
-from backend.application.user_service import UserService
-from backend.application.user_profile_service import UserProfileService
-from backend.data_access.Users.users import UserRepository
-from backend.models import Organisation, Chatbot, Personality, AppUser
-from backend.infrastructure.mongodb.mongo_client import get_mongo_db
-from backend.data_access.ChatMessages.chatMessages import ChatMessageRepository
-from backend.application.notification_service import NotificationService
-from backend.data_access.Notifications.notifications import NotificationRepository
+from __init__ import db
+from application.user_service import UserService
+from application.user_profile_service import UserProfileService
+from data_access.Users.users import UserRepository
+from models import Organisation, Chatbot, Personality, AppUser
+from infrastructure.mongodb.mongo_client import get_mongo_db
+from data_access.ChatMessages.chatMessages import ChatMessageRepository
+from application.notification_service import NotificationService
+from data_access.Notifications.notifications import NotificationRepository
 
 org_admin_bp = Blueprint("org_admin", __name__, url_prefix="/api/org-admin")
 

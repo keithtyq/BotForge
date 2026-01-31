@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
-from backend import db
-from backend.models import Organisation, Feedback, AppUser, FAQ, OrgRole
+from __init__ import db
+from models import Organisation, Feedback, AppUser, FAQ, OrgRole
 from sqlalchemy import desc
-from backend.application.auth_service import (
+from application.auth_service import (
     register_org_admin, confirm_email, login, update_org_profile
 )
 
