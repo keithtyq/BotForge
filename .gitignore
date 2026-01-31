@@ -8,3 +8,6 @@ env/
 # python
 __pycache__/ 
 *.log
+
+# development files
+instance/
