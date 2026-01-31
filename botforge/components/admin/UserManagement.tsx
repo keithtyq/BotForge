@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bot, Search, ShieldAlert, Loader2, X, Check, UserCog } from 'lucide-react';
 import { sysAdminService } from '../../api';
 
-type UserTab = 'roles' | 'list' | 'access';
+type UserTab = 'roles' | 'access';
 
 // Interface for the editing state
 interface EditingUser {
@@ -28,7 +28,7 @@ export const UserManagement: React.FC = () => {
   const [targetType, setTargetType] = useState<'system' | 'org'>('org');
 
   useEffect(() => {
-    if (activeTab === 'list' || activeTab === 'access') {
+    if (activeTab === 'roles' || activeTab === 'access') {
       loadUsers();
     }
   }, [activeTab]);
@@ -216,7 +216,7 @@ export const UserManagement: React.FC = () => {
 
       {/* --- TAB NAVIGATION --- */}
       <div className="flex border-b border-gray-200">
-        {(['roles', 'list', 'access'] as UserTab[]).map((tab) => (
+        {(['roles', 'access'] as UserTab[]).map((tab) => (
           <button 
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -226,31 +226,73 @@ export const UserManagement: React.FC = () => {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            {tab === 'roles' ? 'Role Configuration' : tab === 'list' ? 'User List' : 'Revoke / Access'}
+            {tab === 'roles' ? 'Role Configuration' : 'Revoke / Access'}
           </button>
         ))}
       </div>
 
       {activeTab === 'roles' && (
         <div>
-          <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+          <div className="p-6 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <Bot className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-800">Role Configuration</h2>
-                <p className="text-sm text-gray-500">Edit role-based permissions</p>
+                <h2 className="text-xl font-bold text-gray-800">Manage user roles</h2>
+                <p className="text-sm text-gray-500">View all registered users</p>
               </div>
             </div>
+            {loading && <Loader2 className="w-5 h-5 animate-spin text-blue-600" />}
           </div>
-          <div className="p-6 text-center text-gray-500">
-            Role and Permission matrix management can be implemented using the /api/sysadmin/role-permissions endpoint.
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">System Role</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Org Role</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {users.map((user) => (
+                  <tr key={user.user_id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                      {user.username}
+                      <div className="text-xs text-gray-500">{user.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-bold">
+                        {user.system_role_name || 'N/A'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {user.organisation_name ? `${user.organisation_name} (${user.org_role_name})` : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`text-xs font-bold px-2 py-1 rounded ${user.status ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
+                        {user.status ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button 
+                        onClick={() => handleEditClick(user)}
+                        className="text-blue-600 hover:text-blue-900 font-bold hover:underline"
+                      >
+                        Edit Role
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {activeTab === 'list' && (
+      {/* {activeTab === 'list' && (
         <div>
           <div className="p-6 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
             <div className="flex items-center gap-3">
@@ -309,7 +351,7 @@ export const UserManagement: React.FC = () => {
             </table>
           </div>
         </div>
-      )}
+      )} */}
 
       {activeTab === 'access' && (
         <div>
