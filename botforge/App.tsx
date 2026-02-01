@@ -12,6 +12,7 @@ import { PageView, User } from './types';
 import { authService } from './api';
 import CreateCompanyProfile from './components/organisational-admin/CreateCompanyProfile/CreateCompanyProfile';
 import { ChatPage } from './components/ChatPage';
+import { SelectChat } from './components/SelectChat';
 
 // Wrapper to handle token verification and redirect
 const TokenHandler = () => {
@@ -101,7 +102,7 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
         <Route path="/dashboard" element={
           user ? <Dashboard onLogout={handleLogout} onSystemAdminLogin={() => navigate('/system-admin')} user={user} /> : <Navigate to="/login" />
         } />
-        <Route path="/chat" element={
+        <Route path="/chatPage" element={
           user ? <ChatPage user={user} /> : <Navigate to="/login" />
         } />
 
@@ -112,6 +113,10 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
         {/* Ensure the route exists for the profile page */}
         <Route path="/create-profile" element={
           user ? <CreateCompanyProfile onSuccess={() => navigate('/dashboard?tab=subscription')} /> : <Navigate to="/login" />
+        } />
+
+        <Route path="/selectChat" element={
+          user ? <SelectChat /> : <Navigate to="/login" />
         } />
 
         <Route path="*" element={<Navigate to="/" />} />

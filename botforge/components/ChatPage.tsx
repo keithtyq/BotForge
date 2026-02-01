@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Send, Bot, User as UserIcon, Loader2 } from 'lucide-react';
 import { chatService } from '../api';
 import { User } from '../types';
@@ -24,7 +25,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [quickReplies, setQuickReplies] = useState<string[]>([]);
   const [chatTitle, setChatTitle] = useState('BotForge Assistant');
-  
+
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const sessionId = useMemo(() => {
@@ -43,19 +44,24 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
     }
   }, [messages, isLoading]);
 
+  // Read company_id from query params or user
+  const [searchParams] = useSearchParams();
+  const queryCompanyId = searchParams.get("company_id");
+  const activeCompanyId = queryCompanyId ? parseInt(queryCompanyId) : user?.organisation_id;
+
   // Fetch initial welcome message
   useEffect(() => {
-    if (!user?.organisation_id || messages.length > 0) return;
+    if (!activeCompanyId || messages.length > 0) return;
 
     const fetchWelcome = async () => {
       setIsLoading(true);
-      const res = await chatService.welcome(user.organisation_id, sessionId);
+      const res = await chatService.welcome(activeCompanyId, sessionId);
       if (res.ok) {
-        setMessages([{ 
-          id: `bot-${Date.now()}`, 
-          role: 'bot', 
-          text: res.reply || 'Hello! I am your AI assistant. How can I help you today?', 
-          ts: Date.now() 
+        setMessages([{
+          id: `bot-${Date.now()}`,
+          role: 'bot',
+          text: res.reply || 'Hello! I am your AI assistant. How can I help you today?',
+          ts: Date.now()
         }]);
         if (res.quick_replies) setQuickReplies(res.quick_replies);
         if (res.chatbot?.name) setChatTitle(res.chatbot.name);
@@ -64,11 +70,11 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
     };
 
     fetchWelcome();
-  }, [user?.organisation_id, sessionId, messages.length]);
+  }, [activeCompanyId, sessionId, messages.length]);
 
   const sendMessage = async (text: string) => {
     const trimmed = text.trim();
-    if (!trimmed || isLoading || !user?.organisation_id) return;
+    if (!trimmed || isLoading || !activeCompanyId) return;
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -82,10 +88,10 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
     setIsLoading(true);
 
     const res = await chatService.chat({
-      company_id: user.organisation_id,
+      company_id: activeCompanyId,
       message: trimmed,
       session_id: sessionId,
-      user_id: user.user_id,
+      user_id: user?.user_id,
     });
 
     if (res.ok) {
@@ -107,10 +113,10 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
     setIsLoading(false);
   };
 
-  if (!user?.organisation_id) {
+  if (!activeCompanyId) {
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
-        Please join an organization to use the chatbot.
+        Please join an organization or select a chat to use the chatbot.
       </div>
     );
   }
@@ -133,24 +139,22 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
       </header>
 
       {/* Chat Area */}
-      <main 
-        ref={scrollRef} 
+      <main
+        ref={scrollRef}
         className="flex-1 overflow-y-auto px-4 py-8 md:px-0"
       >
         <div className="max-w-3xl mx-auto space-y-8">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                msg.role === 'bot' ? 'bg-blue-100 text-blue-600' : 'bg-gray-800 text-white'
-              }`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'bot' ? 'bg-blue-100 text-blue-600' : 'bg-gray-800 text-white'
+                }`}>
                 {msg.role === 'bot' ? <Bot size={18} /> : <UserIcon size={18} />}
               </div>
               <div className={`flex flex-col max-w-[85%] ${msg.role === 'user' ? 'items-end' : ''}`}>
-                <div className={`px-4 py-3 rounded-2xl leading-relaxed ${
-                  msg.role === 'user' 
-                    ? 'bg-blue-600 text-white rounded-tr-none' 
-                    : 'bg-gray-100 text-gray-800 rounded-tl-none'
-                }`}>
+                <div className={`px-4 py-3 rounded-2xl leading-relaxed ${msg.role === 'user'
+                  ? 'bg-blue-600 text-white rounded-tr-none'
+                  : 'bg-gray-100 text-gray-800 rounded-tl-none'
+                  }`}>
                   {msg.text}
                 </div>
                 <span className="text-[10px] text-gray-400 mt-1">
@@ -159,7 +163,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
               </div>
             </div>
           ))}
-          
+
           {isLoading && (
             <div className="flex gap-4">
               <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">

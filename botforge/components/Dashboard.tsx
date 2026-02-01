@@ -228,6 +228,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                     <Bot className="h-6 w-6 text-white" />
                 </div>
 
+                {/* Select Chat Button (Admin & Staff) */}
+                <div className="relative group">
+                    <button
+                        onClick={() => window.location.href = '/selectChat'}
+                        className="p-3 rounded-xl bg-gray-100 hover:bg-blue-50 text-gray-600 hover:text-blue-600 transition-all border border-transparent hover:border-blue-200"
+                    >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                        </svg>
+                    </button>
+                    <div className="absolute left-14 top-2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-50">
+                        Select Chat
+                    </div>
+                </div>
+
                 {/* Switch Role Button Removed */}
                 {/* <div className="relative group">
                     <button
