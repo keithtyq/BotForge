@@ -5,7 +5,7 @@ import { Bot, LogOut } from 'lucide-react';
 import { AdminAnalytics } from './admin/AdminAnalytics';
 import { UserManagement } from './admin/UserManagement';
 // import { AIModelManagement } from './admin/AIModelManagement'; // Removed
-import { SystemMaintenance } from './admin/SystemMaintenance';
+// import { SystemMaintenance } from './admin/SystemMaintenance';
 import { FeedbackManagement } from './admin/FeedbackManagement';
 import { PricingManagement } from './admin/PricingManagement';
 import { FeatureManagement } from './admin/FeatureManagement';
@@ -106,12 +106,12 @@ export const SystemAdminDashboard: React.FC<SystemAdminDashboardProps> = ({ onLo
                 onClick={() => setCurrentView('maintenance')}
                 className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'maintenance' ? 'bg-gray-100' : 'bg-white'}`}
               >
-                System maintenance
+                {/* System maintenance
               </button>
               <button
                 onClick={() => setCurrentView('feedback')}
                 className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'feedback' ? 'bg-gray-100' : 'bg-white'}`}
-              >
+              > */}
                 Manage Testimonials
               </button>
               <button
@@ -146,7 +146,7 @@ export const SystemAdminDashboard: React.FC<SystemAdminDashboardProps> = ({ onLo
           {currentView === 'stats' && <AdminAnalytics />}
           {currentView === 'user-admin' && <UserManagement />}
           {/* {currentView === 'ai-model' && <AIModelManagement />} */}
-          {currentView === 'maintenance' && <SystemMaintenance />}
+          {/* {currentView === 'maintenance' && <SystemMaintenance />} */}
           {currentView === 'feedback' && <FeedbackManagement />}
           {currentView === 'pricing' && <PricingManagement />}
           {currentView === 'features' && <FeatureManagement />}
