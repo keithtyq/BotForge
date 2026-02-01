@@ -141,7 +141,7 @@ export const LandingPage: React.FC = () => {
           <div className="grid md:grid-cols-2 gap-8">
             {testimonials.map((t, i) => (
               <div key={i} className="bg-gray-100 p-8 rounded border border-gray-300 relative">
-                <div className="text-6xl text-gray-300 font-serif absolute top-4 left-6">“</div>
+                <div className="text-6xl text-gray-300 font-serif absolute top-4 left-6">"</div>
 
                 <p className="text-gray-800 mb-6 relative z-10 pt-2 text-lg font-medium leading-relaxed">
                   {t.quote}

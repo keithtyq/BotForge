@@ -137,27 +137,47 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
               />
             }
           />
-
+          <Route path="/selectChat" element={
+            user && user.system_role_id === 2 ? <SelectChat /> : <Navigate to="/login" />
+          } />
           <Route path="/register" element={<Auth view={PageView.REGISTER} onLoginSuccess={() => { }} />} />
           <Route path="/activated" element={<Auth view={PageView.ACTIVATED} onLoginSuccess={() => navigate('/login')} />} />
         </Route>
 
-        <Route path="/dashboard" element={
-          user && user.system_role_id === 1 ? <CreateCompanyProfile onSuccess={() => navigate('/dashboard?tab=subscription')} /> : <Navigate to="/login" />
-        } />
+        <Route
+          path="/dashboard"
+          element={
+            user && user.system_role_id === 1
+              ? (user.is_profile_complete ? (
+                  <Dashboard user={user} onLogout={handleLogout} onSystemAdminLogin={() => navigate('/system-admin')} />
+                ) : (
+                  <Navigate to="/create-profile" replace />
+                ))
+              : <Navigate to="/login" replace />
+          }
+        />
 
         <Route path="/system-admin" element={
           user && user.system_role_id === 0 ? <SystemAdminDashboard onLogout={handleLogout} onBackToDashboard={() => navigate('/dashboard')} user={user} /> : <Navigate to="/login" />
         } />
 
-        {/* Ensure the route exists for the profile page */}
-        <Route path="/create-profile" element={
-          user ? <CreateCompanyProfile onSuccess={() => navigate('/dashboard?tab=subscription')} /> : <Navigate to="/login" />
-        } />
+        <Route
+          path="/create-profile"
+          element={
+            user && user.system_role_id === 1
+              ? (!user.is_profile_complete ? (
+                  <CreateCompanyProfile
+                    onSuccess={() => {
+                      navigate('/dashboard', { replace: true });
+                    }}
+                  />
+                ) : (
+                  <Navigate to="/dashboard" replace />
+                ))
+              : <Navigate to="/login" replace />
+          }
+        />
 
-        <Route path="/selectChat" element={
-            user && user.system_role_id === 2 ? <SelectChat /> : <Navigate to="/login" />
-        } />
 
         <Route path="/chatPage" element={
             user && user.system_role_id === 2 ? <ChatPage user={user} /> : <Navigate to="/login" />

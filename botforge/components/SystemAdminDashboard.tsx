@@ -102,16 +102,16 @@ export const SystemAdminDashboard: React.FC<SystemAdminDashboardProps> = ({ onLo
               >
                 User administration
               </button>
-              <button
+              {/* <button
                 onClick={() => setCurrentView('maintenance')}
                 className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'maintenance' ? 'bg-gray-100' : 'bg-white'}`}
               >
-                {/* System maintenance
-              </button>
+                System maintenance
+              </button> */}
               <button
                 onClick={() => setCurrentView('feedback')}
                 className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'feedback' ? 'bg-gray-100' : 'bg-white'}`}
-              > */}
+              > 
                 Manage Testimonials
               </button>
               <button

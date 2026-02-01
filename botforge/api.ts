@@ -382,3 +382,9 @@ export const statsService = {
         return api.get<any>(`/api/sysadmin/reports?${query}`);
     }
 };
+
+export const patronService = {
+  async getChatDirectory() {
+    return api.get<any>('/api/patron/chat-directory');
+  }
+};

@@ -22,8 +22,8 @@ export const OperatorRegister: React.FC = () => {
 
   const token = params.get("token") || "";
 
-  const API_BASE = "https://botforge-xrki.onrender.com"; // your backend (same as warmup)
-
+  const API_BASE = "https://botforge-xrki.onrender.com"; // backend 
+//   const API_BASE = "http://localhost:5000"; // backend 
   const [loading, setLoading] = useState(true);
   const [invitedEmail, setInvitedEmail] = useState("");
   const [orgId, setOrgId] = useState<number | null>(null);
@@ -57,7 +57,7 @@ export const OperatorRegister: React.FC = () => {
         // ok branch
         setInvitedEmail(data.invitation.email);
         setOrgId(data.invitation.organisation_id);
-        
+
       } catch {
         setError("Could not validate invitation. Please try again.");
       } finally {

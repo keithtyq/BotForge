@@ -84,11 +84,24 @@ export const AdminAnalytics: React.FC = () => {
       );
       // Calculate Role Distribution
       const roles: Record<string, number> = {};
+
       nonSysAdminUsers.forEach((u: any) => {
-        const roleName = u.system_role_name || u.org_role_name || 'Unknown';
+        const sysRoleId = Number(u.system_role_id);
+
+        let roleName = 'Unknown';
+
+        if (sysRoleId === 2) {
+          roleName = 'PATRON';
+        } else if (sysRoleId === 1) {
+          roleName = u.org_role_name || 'ORG USER';
+        }
+
         roles[roleName] = (roles[roleName] || 0) + 1;
       });
-      setRoleDistribution(Object.keys(roles).map(name => ({ name, value: roles[name] })));
+
+      setRoleDistribution(
+        Object.keys(roles).map(name => ({ name, value: roles[name] }))
+      );
 
       // Calculate Total Orgs
       const uniqueOrgs = new Set(
