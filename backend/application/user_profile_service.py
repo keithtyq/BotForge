@@ -63,6 +63,12 @@ class UserProfileService:
             raise ValueError("Password must be at least 8 characters")
 
         self.user_repo.update_password(user, new_password)
+        # Notify user
+        self.notification_service.notify_user(
+            user_id=user.user_id,
+            title="Password changed",
+            content="Your account password was changed successfully."
+        )
 
     def delete_account(self, user_id: int):
         user = self.user_repo.get_by_id(user_id)
