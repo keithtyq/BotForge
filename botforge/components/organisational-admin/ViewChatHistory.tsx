@@ -40,7 +40,11 @@ export const ViewChatHistory: React.FC<ViewChatHistoryProps> = ({
 
             const res = await service.getChatHistory(
                 organisationId,
-                filters
+                {
+                    ...filters,
+                    page: 1,
+                    page_size: 50,
+                }
             );
 
             if (res?.ok) {
