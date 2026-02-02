@@ -207,9 +207,10 @@ export default function App() {
   };
 
   // backend warm up (runs on site visit)
+  const BACKEND_BASE = import.meta.env.VITE_BACKEND_BASE_URL;
   useEffect(() => {
     if (window.location.hostname === "localhost") return;
-    fetch("https://botforge-xrki.onrender.com/health")
+    fetch(`${BACKEND_BASE}/health`)
       .catch(() => {
         // Ignore errors - backend may be cold starting
       });
