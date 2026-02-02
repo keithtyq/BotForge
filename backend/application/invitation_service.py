@@ -48,7 +48,7 @@ def create_invitation(payload: dict, notification_service) -> dict:
             db.session.rollback()
             continue
 
-        base_url = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
+        base_url = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000")
         signup_link = f"{base_url}/operator-signup?token={token}"
 
         subject = "You're invited to join the organisation"
@@ -86,6 +86,7 @@ def create_invitation(payload: dict, notification_service) -> dict:
             "token": token,
             "signup_link": signup_link
         }
+    print("FRONTEND_BASE_URL =", os.getenv("FRONTEND_BASE_URL"))
 
     return {"ok": False, "error": "Failed to generate a unique invitation token. Try again."}
 

@@ -108,7 +108,7 @@ export const Layout: React.FC<LayoutProps> = ({
               <Bot className="h-5 w-5 text-gray-400" />
               <span className="text-gray-500 font-semibold">BotForge</span>
             </div>
-            <p className="text-gray-400 text-sm">© 2024 BotForge. All rights reserved.</p>
+            <p className="text-gray-400 text-sm">© 2026 BotForge. All rights reserved.</p>
           </div>
         </div>
       </footer>
