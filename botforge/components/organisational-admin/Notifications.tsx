@@ -22,13 +22,13 @@ export const Notifications: React.FC<NotificationsProps> = ({ onBack, user }) =>
     if (!user?.user_id) return;
     setLoading(true);
     const res = await notificationService.listNotifications(user.user_id);
-    if (res.ok && Array.isArray(res)) {
-      setNotifications(res);
+    if (res.ok && Array.isArray(res.notifications)) {
+      setNotifications(res.notifications);
 
       // Mark all as read when opening (optional, or we can do it on interaction)
       // For now let's just mark them individually or when user views them effectively
       // Or we can auto-mark unread ones
-      res.filter((n: any) => !n.is_read).forEach((n: any) => {
+      res.notifications.filter((n: any) => !n.is_read).forEach((n: any) => {
         notificationService.markAsRead(user.user_id, n.message_id);
       });
     }

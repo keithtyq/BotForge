@@ -21,16 +21,19 @@ def list_notifications():
 
     notifications = service.list_notifications(user_id)
 
-    return jsonify([
-        {
-            "message_id": n.message_id,
-            "title": n.title,
-            "content": n.content,
-            "is_read": n.is_read,
-            "creation_date": n.creation_date
-        }
-        for n in notifications
-    ]), 200
+    return jsonify({
+        "ok": True,
+        "notifications": [
+            {
+                "message_id": n.message_id,
+                "title": n.title,
+                "content": n.content,
+                "is_read": n.is_read,
+                "creation_date": n.creation_date
+            }
+            for n in notifications
+        ]
+    }), 200
 
 
 @notifications_bp.put("/<int:message_id>/read")
@@ -46,7 +49,7 @@ def mark_notification_read(message_id: int):
     except ValueError as e:
         return {"error": str(e)}, 400
 
-    return {"message": "Notification marked as read"}, 200
+    return {"ok": True, "message": "Notification marked as read"}, 200
 
 
 @notifications_bp.delete("/<int:message_id>")
@@ -62,4 +65,4 @@ def delete_notification(message_id: int):
     except ValueError as e:
         return {"error": str(e)}, 400
 
-    return {"message": "Notification deleted"}, 200
+    return {"ok": True, "message": "Notification deleted"}, 200
