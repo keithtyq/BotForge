@@ -116,7 +116,7 @@ class NotificationService:
 
         self.notification_repo.mark_as_read(notification)
 
-    def delete_notification(self, user_id: int, message_id: int):
+    def dismiss_notification(self, user_id: int, message_id: int):
         notification = self.notification_repo.get_by_id(message_id)
         if not notification:
             raise ValueError("Notification not found")
@@ -124,5 +124,7 @@ class NotificationService:
         if notification.user_id != user_id:
             raise ValueError("Not allowed")
 
-        self.notification_repo.delete(notification)
+        self.notification_repo.dismiss_notification(notification)
+
+
 

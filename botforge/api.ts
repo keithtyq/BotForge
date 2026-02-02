@@ -346,12 +346,11 @@ export const notificationService = {
         return api.get<any>(`/api/notifications/?user_id=${userId}`);
     },
 
-    async markAsRead(userId: number, messageId: number) {
-        return api.put<any>(`/api/notifications/${messageId}/read`, { user_id: userId });
-    },
-
-    async deleteNotification(userId: number, messageId: number) {
-        return api.request<any>(`/api/notifications/${messageId}`, 'DELETE', { user_id: userId });
+    async dismissNotification(userId: number, messageId: number) {
+        return api.put<any>(
+            `/api/notifications/${messageId}/dismiss`,
+            { user_id: userId }
+        );
     }
 };
 

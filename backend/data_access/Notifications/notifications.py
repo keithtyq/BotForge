@@ -23,10 +23,7 @@ class NotificationRepository:
     def get_by_id(self, message_id: int) -> Notification | None:
         return db.session.get(Notification, message_id)
 
-    def mark_as_read(self, notification: Notification):
+    # dismisses notification
+    def dismiss_notification(self, notification: Notification):
         notification.is_read = True
-        db.session.commit()
-
-    def delete(self, notification: Notification):
-        db.session.delete(notification)
         db.session.commit()
