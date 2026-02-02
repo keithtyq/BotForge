@@ -17,6 +17,7 @@ import { CustomizeChatbot as AdminCustomize } from './organisational-admin/Custo
 import { ViewChatHistory as AdminHistory } from './organisational-admin/ViewChatHistory';
 import { SubmitFeedback as AdminFeedback } from './organisational-admin/SubmitFeedback';
 import { ManageAccount as AdminAccount } from './organisational-admin/ManageAccount';
+import { ManageOrgProfile } from './organisational-admin/ManageOrgProfile';
 import { Notifications } from './organisational-admin/Notifications';
 import { ChatWidget } from './ChatWidget';
 
@@ -364,6 +365,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                             >
                                 Manage Account
                             </button>
+
+                            {isOrgAdmin && (
+                                <button
+                                    onClick={() => setActiveTab('org-profile')}
+                                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'org-profile' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
+                                >
+                                    Manage Org Profile
+                                </button>
+                            )}
                         </div>
                         {/* Divider */}
                         <div className="h-px w-full bg-gray-100 mt-6"></div>
@@ -422,6 +432,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                         isStaff
                             ? <StaffAccount onBack={() => setActiveTab('analytics')} role={UserRole.STAFF} />
                             : <AdminAccount onBack={() => setActiveTab('analytics')} />
+                    )}
+
+                    {activeTab === 'org-profile' && isOrgAdmin && (
+                        <ManageOrgProfile onBack={() => setActiveTab('analytics')} />
                     )}
                 </main>
             </div>

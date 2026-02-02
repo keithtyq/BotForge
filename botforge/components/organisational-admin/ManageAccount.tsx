@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Loader2, Save, X, Edit2 } from 'lucide-react';
+import { Loader2, X, Edit2 } from 'lucide-react';
 import { authService, orgAdminService } from '../../api';
 import { User } from '../../types';
 
@@ -25,17 +25,7 @@ export const ManageAccount: React.FC<ManageAccountProps> = ({ onBack }) => {
     const [tempName, setTempName] = useState('');
     const [tempEmail, setTempEmail] = useState('');
 
-    // Company Profile State
-    const [companyName, setCompanyName] = useState('');
-    const [industry, setIndustry] = useState('Technology');
-    const [companySize, setCompanySize] = useState('11-50'); // Not connected to backend yet, keep as dummy
-    const [description, setDescription] = useState('');
-    const [location, setLocation] = useState('');
-    const [websiteUrl, setWebsiteUrl] = useState('');
 
-    // Logo dummy
-    const [logoPreview, setLogoPreview] = useState<string | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         loadData();
@@ -51,19 +41,7 @@ export const ManageAccount: React.FC<ManageAccountProps> = ({ onBack }) => {
                 setName(u.username || '');
                 setEmail(u.email || '');
 
-                // Fetch Org Data
-                if (u.organisation_id) {
-                    const res = await authService.getOrgProfile(u.organisation_id);
-                    if (res.ok && res.organisation) {
-                        const org = res.organisation;
-                        setCompanyName(org.name || '');
-                        setIndustry(org.industry || 'Technology');
-                        setDescription(org.description || '');
-                        setLocation(org.location || '');
-                        setWebsiteUrl(org.website_url || '');
-                        // Map other fields as needed
-                    }
-                }
+
             }
         } catch (e) {
             console.error(e);
@@ -148,49 +126,7 @@ export const ManageAccount: React.FC<ManageAccountProps> = ({ onBack }) => {
         setIsEditingEmail(false);
     }
 
-    // Handlers for Company Profile
-    const handleSaveCompany = async () => {
-        if (!user || !user.organisation_id) return;
-        setIsSaving(true);
-        try {
-            // Re-use authService.updateOrgProfile which calls /api/public/organisation/profile
-            // This endpoint expects organisation_id in body
-            const payload = {
-                organisation_id: user.organisation_id,
-                company_name: companyName, // Accept name or company_name
-                industry,
-                description,
-                location,
-                website_url: websiteUrl
-            };
 
-            const res = await authService.updateOrgProfile(payload);
-            if (res.ok) {
-                setSuccessMsg("Company profile updated");
-                // Refresh data to be sure
-                loadData();
-            } else {
-                alert(res.error || "Failed to update company");
-            }
-
-        } catch (e) {
-            alert("Error updating company");
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-
-    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            setLogoPreview(URL.createObjectURL(file));
-        }
-    };
-
-    const triggerFileInput = () => {
-        fileInputRef.current?.click();
-    };
 
     if (isLoading) {
         return <div className="flex justify-center p-10"><Loader2 className="animate-spin" /></div>;
@@ -401,134 +337,7 @@ export const ManageAccount: React.FC<ManageAccountProps> = ({ onBack }) => {
                 </div>
             </div>
 
-            {/* Company Profile Section */}
-            <div className="max-w-md">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-lg font-bold text-black">Company Profile</h2>
-                    <button
-                        onClick={handleSaveCompany}
-                        disabled={isSaving}
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
-                    >
-                        {isSaving ? <Loader2 className="animate-spin h-4 w-4" /> : <Save size={16} />}
-                        Save Changes
-                    </button>
-                </div>
 
-                <div className="space-y-6">
-
-                    {/* Company Name */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-900 mb-2">Company:</label>
-                        <input
-                            type="text"
-                            value={companyName}
-                            onChange={(e) => setCompanyName(e.target.value)}
-                            className="w-full p-3 border border-gray-400 rounded text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200"
-                        />
-                    </div>
-
-                    {/* Industry */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-900 mb-2">Industry:</label>
-                        <div className="relative">
-                            <select
-                                value={industry}
-                                onChange={(e) => setIndustry(e.target.value)}
-                                className="w-full p-3 border border-gray-400 rounded text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200 appearance-none bg-white"
-                            >
-                                <option value="Technology">Technology</option>
-                                <option value="F&B">F&B</option>
-                                <option value="Retail">Retail</option>
-                                <option value="Education">Education</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Location / Address */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-900 mb-2">Address:</label>
-                        <input
-                            type="text"
-                            value={location}
-                            onChange={(e) => setLocation(e.target.value)}
-                            className="w-full p-3 border border-gray-400 rounded text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200"
-                        />
-                    </div>
-
-                    {/* Website */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-900 mb-2">Website URL:</label>
-                        <input
-                            type="text"
-                            value={websiteUrl}
-                            onChange={(e) => setWebsiteUrl(e.target.value)}
-                            className="w-full p-3 border border-gray-400 rounded text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200"
-                        />
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-900 mb-2">Description:</label>
-                        <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className="w-full p-3 border border-gray-400 rounded text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200"
-                            rows={3}
-                        />
-                    </div>
-
-
-                    {/* Company Size  (Mock) */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-900 mb-2">Company Size:</label>
-                        <div className="relative">
-                            <select
-                                value={companySize}
-                                onChange={(e) => setCompanySize(e.target.value)}
-                                className="w-full p-3 border border-gray-400 rounded text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200 appearance-none bg-white"
-                            >
-                                <option>1-10</option>
-                                <option>11-50</option>
-                                <option>51-200</option>
-                                <option>200+</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Company Logo (Mock upload) */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-900 mb-2">Company Logo:</label>
-                        <div
-                            className="border border-gray-400 rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors h-48"
-                            onClick={triggerFileInput}
-                        >
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleLogoUpload}
-                                className="hidden"
-                                accept="image/*"
-                            />
-
-                            {logoPreview ? (
-                                <img src={logoPreview} alt="Logo Preview" className="h-full w-auto object-contain" />
-                            ) : (
-                                <div className="flex flex-col items-center">
-                                    <div className="bg-blue-500 rounded-lg p-4 mb-4">
-                                        <Upload className="w-8 h-8 text-white" />
-                                    </div>
-                                    <button className="px-4 py-2 border border-gray-400 rounded font-bold text-sm text-gray-800 bg-white">
-                                        Upload file
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-
-                </div>
-            </div>
 
         </div>
     );
