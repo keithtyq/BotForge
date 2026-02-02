@@ -1,28 +1,31 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response, stream_with_context
 from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash
 from sqlalchemy.exc import IntegrityError
-
 from application.invitation_service import (
     validate_invitation_token,
     accept_invitation_and_create_operator
 )
 from application.user_profile_service import UserProfileService
 from application.notification_service import NotificationService
+from application.chat_history_service import ChatHistoryService
 from data_access.Users.users import UserRepository
 from data_access.Notifications.notifications import NotificationRepository
-from infrastructure.mongodb.mongo_client import get_mongo_db
 from data_access.ChatMessages.chatMessages import ChatMessageRepository
+from infrastructure.mongodb.mongo_client import get_mongo_db
+
 
 operator_bp = Blueprint("operator", __name__, url_prefix="/api/operator")
 
-# ---------- Services ----------
+# Services & repositories
+
 user_repo = UserRepository()
 notification_repo = NotificationRepository()
 notification_service = NotificationService(notification_repo, user_repo)
 profile_service = UserProfileService(user_repo, notification_service)
 
 # Invitation & registration
+
 @operator_bp.get("/invitations/validate")
 def validate():
     token = request.args.get("token", "")
@@ -47,7 +50,9 @@ def operator_register():
     result = accept_invitation_and_create_operator(payload, notification_service)
     return jsonify(result), (200 if result.get("ok") else 400)
 
+
 # Operator account management
+
 @operator_bp.put("/profile")
 def update_operator_profile():
     data = request.get_json() or {}
@@ -116,7 +121,8 @@ def delete_operator_account():
 
     return {"message": "Account deactivated"}, 200
 
-# Operator: chat history (MongoDB)
+# Operator: chat history 
+
 @operator_bp.get("/chat-history")
 def get_operator_chat_history():
     organisation_id = request.args.get("organisation_id", type=int)
@@ -127,30 +133,43 @@ def get_operator_chat_history():
     date_from = request.args.get("from")
     date_to = request.args.get("to")
 
-    repo = ChatMessageRepository(get_mongo_db())
-    query = {"organisationId": organisation_id}
+    from_dt = None
+    to_dt = None
 
-    if q:
-        query["message"] = {"$regex": q, "$options": "i"}
+    if date_from:
+        try:
+            from_dt = datetime.strptime(date_from, "%Y-%m-%d")
+        except ValueError:
+            return {"error": "from must be YYYY-MM-DD"}, 400
 
-    if date_from or date_to:
-        query["timestamp"] = {}
-        if date_from:
-            query["timestamp"]["$gte"] = datetime.strptime(date_from, "%Y-%m-%d")
-        if date_to:
-            end = datetime.strptime(date_to, "%Y-%m-%d")
-            end = end.replace(hour=23, minute=59, second=59)
-            query["timestamp"]["$lte"] = end
+    if date_to:
+        try:
+            to_dt = datetime.strptime(date_to, "%Y-%m-%d")
+            to_dt = to_dt.replace(hour=23, minute=59, second=59)
+        except ValueError:
+            return {"error": "to must be YYYY-MM-DD"}, 400
 
-    cursor = repo.collection.find(query).sort("timestamp", -1).limit(50)
+    service = ChatHistoryService(
+        ChatMessageRepository(get_mongo_db())
+    )
 
-    results = []
-    for r in cursor:
+    # Operators only see recent messages (no pagination UI yet)
+    _, rows = service.get_chat_history(
+        organisation_id=organisation_id,
+        keyword=q or None,
+        date_from=from_dt,
+        date_to=to_dt,
+        page=1,
+        page_size=50,
+    )
+
+    messages = []
+    for r in rows:
         ts = r.get("timestamp")
         if ts and ts.tzinfo is None:
             ts = ts.replace(tzinfo=timezone.utc)
 
-        results.append({
+        messages.append({
             "message_id": str(r["_id"]),
             "sender": r.get("sender"),
             "sender_name": r.get("senderName") or "Guest",
@@ -160,10 +179,12 @@ def get_operator_chat_history():
 
     return jsonify({
         "ok": True,
-        "messages": results
+        "messages": messages
     }), 200
 
-# Operator: analytics (MongoDB)
+
+# Operator: analytics
+
 @operator_bp.get("/analytics")
 def get_operator_chatbot_analytics():
     organisation_id = request.args.get("organisation_id", type=int)
@@ -186,6 +207,7 @@ def get_operator_chatbot_analytics():
     end = end.replace(hour=23, minute=59, second=59)
 
     repo = ChatMessageRepository(get_mongo_db())
+
     query = {
         "organisationId": organisation_id,
         "sender": "user",
@@ -238,3 +260,51 @@ def get_operator_chatbot_analytics():
             "count": hourly_counts.get(most_active_hour, 0) if most_active_hour is not None else 0,
         }
     }), 200
+
+# export chat history as CSV
+@operator_bp.get("/chat-history/export")
+def export_operator_chat_history_csv():
+    organisation_id = request.args.get("organisation_id", type=int)
+    if not organisation_id:
+        return {"error": "organisation_id is required"}, 400
+
+    q = (request.args.get("q") or "").strip()
+    date_from = request.args.get("from")
+    date_to = request.args.get("to")
+
+    from_dt = None
+    to_dt = None
+
+    if date_from:
+        try:
+            from_dt = datetime.strptime(date_from, "%Y-%m-%d")
+        except ValueError:
+            return {"error": "from must be YYYY-MM-DD"}, 400
+
+    if date_to:
+        try:
+            to_dt = datetime.strptime(date_to, "%Y-%m-%d")
+            to_dt = to_dt.replace(hour=23, minute=59, second=59)
+        except ValueError:
+            return {"error": "to must be YYYY-MM-DD"}, 400
+
+    service = ChatHistoryService(
+        ChatMessageRepository(get_mongo_db())
+    )
+
+    filename = f"chat_export_operator_{organisation_id}.csv"
+
+    return Response(
+        stream_with_context(
+            service.stream_csv_export(
+                organisation_id=organisation_id,
+                keyword=q or None,
+                date_from=from_dt,
+                date_to=to_dt,
+            )
+        ),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        },
+    )

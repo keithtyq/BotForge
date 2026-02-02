@@ -1,17 +1,22 @@
-from flask import Blueprint, request, jsonify
-from datetime import datetime, timedelta, timezone
-from sqlalchemy.exc import IntegrityError
 from __init__ import db
+from flask import Blueprint, request, jsonify, Response, stream_with_context
+from flask_cors import cross_origin
+from datetime import datetime, timezone, timedelta
+from sqlalchemy.exc import IntegrityError
+from models import Organisation, Chatbot, Personality
 from application.user_service import UserService
 from application.user_profile_service import UserProfileService
-from data_access.Users.users import UserRepository
-from models import Organisation, Chatbot, Personality
-from infrastructure.mongodb.mongo_client import get_mongo_db
-from data_access.ChatMessages.chatMessages import ChatMessageRepository
 from application.notification_service import NotificationService
+from application.chat_history_service import ChatHistoryService
+from data_access.Users.users import UserRepository
 from data_access.Notifications.notifications import NotificationRepository
+from data_access.ChatMessages.chatMessages import ChatMessageRepository
+from infrastructure.mongodb.mongo_client import get_mongo_db
+
 
 org_admin_bp = Blueprint("org_admin", __name__, url_prefix="/api/org-admin")
+
+# Services & repositories
 
 user_repo = UserRepository()
 notification_repo = NotificationRepository()
@@ -19,6 +24,8 @@ notification_service = NotificationService(notification_repo, user_repo)
 
 user_service = UserService(user_repo)
 profile_service = UserProfileService(user_repo, notification_service)
+
+# Helpers
 
 def _get_or_create_chatbot(organisation_id: int) -> Chatbot | None:
     org = Organisation.query.get(organisation_id)
@@ -71,7 +78,8 @@ def _validate_chatbot_payload(data: dict) -> str | None:
 
     return None
 
-# ORG ADMIN: manage organisation users
+# ORG ADMIN: users
+
 @org_admin_bp.get("/users")
 def list_org_users():
     organisation_id = request.args.get("organisation_id", type=int)
@@ -116,7 +124,8 @@ def update_user_role(user_id: int):
         "org_role_name": updated_user.org_role.name if updated_user.org_role else None
     }, 200
 
-# ORG ADMIN: own account management
+# ORG ADMIN: profile & account
+
 @org_admin_bp.put("/profile")
 def update_admin_profile():
     data = request.get_json() or {}
@@ -153,9 +162,7 @@ def change_admin_password():
     confirm_password = data.get("confirm_password")
 
     if not all([user_id, old_password, new_password, confirm_password]):
-        return {
-            "error": "user_id, old_password, new_password and confirm_password are required"
-        }, 400
+        return {"error": "All password fields are required"}, 400
 
     if new_password != confirm_password:
         return {"error": "New password and confirm password do not match"}, 400
@@ -170,6 +177,7 @@ def change_admin_password():
         return {"error": str(e)}, 400
 
     return {"message": "Password updated"}, 200
+
 
 @org_admin_bp.delete("/account")
 def deactivate_admin_account():
@@ -186,9 +194,8 @@ def deactivate_admin_account():
 
     return {"message": "Account deactivated"}, 200
 
-
-
 # ORG ADMIN: personalities
+
 @org_admin_bp.get("/personalities")
 def list_personalities():
     rows = Personality.query.order_by(Personality.personality_id.asc()).all()
@@ -206,8 +213,8 @@ def list_personalities():
         ]
     }), 200
 
-
 # ORG ADMIN: chat history
+
 @org_admin_bp.get("/chat-history")
 def get_chat_history():
     organisation_id = request.args.get("organisation_id", type=int)
@@ -220,9 +227,6 @@ def get_chat_history():
     page = request.args.get("page", type=int) or 1
     page_size = request.args.get("page_size", type=int) or 20
 
-    repo = ChatMessageRepository(get_mongo_db())
-
-    # Build date filters
     from_dt = None
     to_dt = None
 
@@ -239,39 +243,26 @@ def get_chat_history():
         except ValueError:
             return {"error": "to must be YYYY-MM-DD"}, 400
 
-    query = {
-        "organisationId": organisation_id
-    }
-
-    if q:
-        query["message"] = {"$regex": q, "$options": "i"}
-
-    if from_dt or to_dt:
-        query["timestamp"] = {}
-        if from_dt:
-            query["timestamp"]["$gte"] = from_dt
-        if to_dt:
-            query["timestamp"]["$lte"] = to_dt
-
-    collection = repo.collection
-
-    total = collection.count_documents(query)
-
-    cursor = (
-        collection.find(query)
-        .sort("timestamp", -1)
-        .skip((page - 1) * page_size)
-        .limit(page_size)
+    service = ChatHistoryService(
+        ChatMessageRepository(get_mongo_db())
     )
 
-    results = []
-    for r in cursor:
-        ts = r.get("timestamp")
+    total, rows = service.get_chat_history(
+        organisation_id=organisation_id,
+        keyword=q or None,
+        date_from=from_dt,
+        date_to=to_dt,
+        page=page,
+        page_size=page_size,
+    )
 
+    messages = []
+    for r in rows:
+        ts = r.get("timestamp")
         if ts and ts.tzinfo is None:
             ts = ts.replace(tzinfo=timezone.utc)
 
-        results.append({
+        messages.append({
             "message_id": str(r["_id"]),
             "sender": r.get("sender"),
             "sender_name": r.get("senderName") or "Guest",
@@ -284,111 +275,11 @@ def get_chat_history():
         "total": total,
         "page": page,
         "page_size": page_size,
-        "messages": results,
+        "messages": messages,
     }), 200
 
-# ORG ADMIN: chatbot analytics
-@org_admin_bp.get("/analytics")
-def get_chatbot_analytics():
-    organisation_id = request.args.get("organisation_id", type=int)
-    if not organisation_id:
-        return {"error": "organisation_id is required"}, 400
+# ORG ADMIN: chatbot settings
 
-    date_from = request.args.get("from")
-    date_to = request.args.get("to")
-
-    # Default range: last 7 days (UTC)
-    try:
-        if date_to:
-            end = datetime.strptime(date_to, "%Y-%m-%d")
-        else:
-            end = datetime.utcnow()
-
-        if date_from:
-            start = datetime.strptime(date_from, "%Y-%m-%d")
-        else:
-            start = end - timedelta(days=6)
-    except ValueError:
-        return {"error": "from/to must be YYYY-MM-DD"}, 400
-
-    # Inclusive end of day
-    end = end.replace(hour=23, minute=59, second=59)
-    # mongo query
-    repo = ChatMessageRepository(get_mongo_db())
-
-    query = {
-        "organisationId": organisation_id,
-        "sender": "user",
-        "timestamp": {
-            "$gte": start,
-            "$lte": end,
-        },
-    }
-
-    rows = repo.collection.find(query)
-    # analytics calculations
-    daily_counts = {}
-    unique_users = set()
-    unique_sessions = set()
-    hourly_counts = {}
-
-    for r in rows:
-        ts = r.get("timestamp")
-        if not ts:
-            continue
-
-        day_key = ts.date()
-        daily_counts[day_key] = daily_counts.get(day_key, 0) + 1
-
-        hour = ts.hour
-        hourly_counts[hour] = hourly_counts.get(hour, 0) + 1
-
-        if r.get("senderUserId"):
-            unique_users.add(r.get("senderUserId"))
-        elif r.get("sessionId"):
-            unique_sessions.add(r.get("sessionId"))
-
-    daily_list = []
-    cursor = start.date()
-    end_date = end.date()
-
-    while cursor <= end_date:
-        daily_list.append({
-            "date": cursor.strftime("%d-%m-%Y"),
-            "day": cursor.strftime("%A"),
-            "count": daily_counts.get(cursor, 0),
-        })
-        cursor += timedelta(days=1)
-
-    # Most active hour
-    most_active_hour = None
-    if hourly_counts:
-        most_active_hour = max(hourly_counts, key=hourly_counts.get)
-
-    return jsonify({
-        "ok": True,
-        "range": {
-            "from": start.strftime("%Y-%m-%d"),
-            "to": end.strftime("%Y-%m-%d"),
-            "timezone": "UTC",
-        },
-        "daily_chats": daily_list,
-        "total_chats": sum(daily_counts.values()),
-        "unique_users": len(unique_users) if unique_users else len(unique_sessions),
-        "most_active_hour": {
-            "hour_24": most_active_hour,
-            "label": (
-                None
-                if most_active_hour is None
-                else datetime.strptime(str(most_active_hour), "%H").strftime("%I %p")
-            ),
-            "count": hourly_counts.get(most_active_hour, 0)
-            if most_active_hour is not None
-            else 0,
-        },
-    }), 200
-
-# ORG ADMIN: customize chatbot
 @org_admin_bp.get("/chatbot")
 def get_chatbot_settings():
     organisation_id = request.args.get("organisation_id", type=int)
@@ -429,15 +320,12 @@ def update_chatbot_settings():
     if not chatbot:
         return {"error": "Organisation not found"}, 404
 
-    # Core fields
     if data.get("name") is not None:
         chatbot.name = data.get("name")
     if data.get("description") is not None:
         chatbot.description = data.get("description")
     if data.get("personality_id") is not None:
         chatbot.personality_id = data.get("personality_id")
-
-    # Customize fields
     if data.get("welcome_message") is not None:
         chatbot.welcome_message = data.get("welcome_message")
     if data.get("primary_language") is not None:
@@ -466,3 +354,148 @@ def update_chatbot_settings():
             "allow_emojis": chatbot.allow_emojis,
         }
     }), 200
+
+@org_admin_bp.route("/analytics", methods=["GET", "OPTIONS"])
+@cross_origin()
+def get_chatbot_analytics():
+    organisation_id = request.args.get("organisation_id", type=int)
+    if not organisation_id:
+        return {"error": "organisation_id is required"}, 400
+
+    date_from = request.args.get("from")
+    date_to = request.args.get("to")
+
+    # Default range: last 7 days (UTC)
+    try:
+        if date_to:
+            end = datetime.strptime(date_to, "%Y-%m-%d")
+        else:
+            end = datetime.utcnow()
+
+        if date_from:
+            start = datetime.strptime(date_from, "%Y-%m-%d")
+        else:
+            start = end - timedelta(days=6)
+    except ValueError:
+        return {"error": "from/to must be YYYY-MM-DD"}, 400
+
+    end = end.replace(hour=23, minute=59, second=59)
+
+    repo = ChatMessageRepository(get_mongo_db())
+
+    query = {
+        "organisationId": organisation_id,
+        "sender": "user",
+        "timestamp": {
+            "$gte": start,
+            "$lte": end,
+        },
+    }
+
+    rows = repo.collection.find(query)
+
+    daily_counts = {}
+    hourly_counts = {}
+    unique_users = set()
+    unique_sessions = set()
+
+    for r in rows:
+        ts = r.get("timestamp")
+        if not ts:
+            continue
+
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+
+        day = ts.date()
+        daily_counts[day] = daily_counts.get(day, 0) + 1
+
+        hour = ts.hour
+        hourly_counts[hour] = hourly_counts.get(hour, 0) + 1
+
+        if r.get("senderUserId"):
+            unique_users.add(r.get("senderUserId"))
+        elif r.get("sessionId"):
+            unique_sessions.add(r.get("sessionId"))
+
+    daily_list = []
+    cursor = start.date()
+    while cursor <= end.date():
+        daily_list.append({
+            "date": cursor.strftime("%d-%m-%Y"),
+            "day": cursor.strftime("%A"),
+            "count": daily_counts.get(cursor, 0),
+        })
+        cursor += timedelta(days=1)
+
+    most_active_hour = max(hourly_counts, key=hourly_counts.get) if hourly_counts else None
+
+    return jsonify({
+        "ok": True,
+        "range": {
+            "from": start.strftime("%Y-%m-%d"),
+            "to": end.strftime("%Y-%m-%d"),
+            "timezone": "UTC",
+        },
+        "daily_chats": daily_list,
+        "total_chats": sum(daily_counts.values()),
+        "unique_users": len(unique_users) if unique_users else len(unique_sessions),
+        "most_active_hour": {
+            "hour_24": most_active_hour,
+            "label": (
+                None if most_active_hour is None
+                else datetime.strptime(str(most_active_hour), "%H").strftime("%I %p")
+            ),
+            "count": hourly_counts.get(most_active_hour, 0)
+            if most_active_hour is not None
+            else 0,
+        },
+    }), 200
+
+# export chat history as CSV
+@org_admin_bp.get("/chat-history/export")
+def export_chat_history_csv():
+    organisation_id = request.args.get("organisation_id", type=int)
+    if not organisation_id:
+        return {"error": "organisation_id is required"}, 400
+
+    q = (request.args.get("q") or "").strip()
+    date_from = request.args.get("from")
+    date_to = request.args.get("to")
+
+    from_dt = None
+    to_dt = None
+
+    if date_from:
+        try:
+            from_dt = datetime.strptime(date_from, "%Y-%m-%d")
+        except ValueError:
+            return {"error": "from must be YYYY-MM-DD"}, 400
+
+    if date_to:
+        try:
+            to_dt = datetime.strptime(date_to, "%Y-%m-%d")
+            to_dt = to_dt.replace(hour=23, minute=59, second=59)
+        except ValueError:
+            return {"error": "to must be YYYY-MM-DD"}, 400
+
+    service = ChatHistoryService(
+        ChatMessageRepository(get_mongo_db())
+    )
+
+    filename = f"chat_export_org_{organisation_id}.csv"
+
+    return Response(
+        stream_with_context(
+            service.stream_csv_export(
+                organisation_id=organisation_id,
+                keyword=q or None,
+                date_from=from_dt,
+                date_to=to_dt,
+            )
+        ),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        },
+    )

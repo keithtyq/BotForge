@@ -1,8 +1,5 @@
-# backend/application/ai/chatbot_service.py
-
 from typing import Any, Dict, List, Optional
 import re
-from datetime import datetime, timezone
 
 class ChatbotService:
     def __init__(
@@ -13,7 +10,7 @@ class ChatbotService:
         template_engine,
         chatbot_repository=None,
         personality_repository=None,
-        chat_message_repository=None,
+        chat_message_service=None, 
     ):
         self.intent_service = intent_service
         self.company_repository = company_repository
@@ -21,11 +18,9 @@ class ChatbotService:
         self.template_engine = template_engine
         self.chatbot_repository = chatbot_repository
         self.personality_repository = personality_repository
-        self.chat_message_repository = chat_message_repository
+        self.chat_message_service = chat_message_service
 
-    # ============================================================
     # CHAT
-    # ============================================================
     def chat(
         self,
         company_id: str | int,
@@ -82,7 +77,8 @@ class ChatbotService:
 
         quick_replies = self._quick_replies_for(industry, intent)
 
-        self._log_chat_message(
+        # Persist USER message
+        self._save_chat_message(
             organisation_id=company_id,
             chatbot_id=chatbot.bot_id if chatbot else None,
             session_id=session_id,
@@ -91,8 +87,8 @@ class ChatbotService:
             message=message,
             intent=intent,
         )
-
-        self._log_chat_message(
+        # Persist BOT reply
+        self._save_chat_message(
             organisation_id=company_id,
             chatbot_id=chatbot.bot_id if chatbot else None,
             session_id=session_id,
@@ -111,9 +107,7 @@ class ChatbotService:
             "quick_replies": quick_replies,
         }
 
-    # ============================================================
-    # WELCOME 
-    # ============================================================
+    # WELCOME
     def welcome(
         self,
         company_id: str | int,
@@ -160,8 +154,9 @@ class ChatbotService:
         elif chatbot and chatbot.allow_emojis is True:
             reply = self._ensure_emoji(reply)
 
-        if chatbot and session_id and self.chat_message_repository:
-            self._log_chat_message(
+        # Persist welcome message
+        if chatbot and session_id:
+            self._save_chat_message(
                 organisation_id=company_id,
                 chatbot_id=chatbot.bot_id,
                 session_id=session_id,
@@ -170,6 +165,7 @@ class ChatbotService:
                 message=reply,
                 intent="greet",
             )
+
         return {
             "ok": True,
             "intent": "greet",
@@ -179,10 +175,8 @@ class ChatbotService:
             "quick_replies": self._quick_replies_for(industry, "greet"),
         }
 
-    # ============================================================
     # HELPERS
-    # ============================================================
-    def _log_chat_message(
+    def _save_chat_message(
         self,
         organisation_id: str | int,
         chatbot_id: Optional[int],
@@ -192,31 +186,21 @@ class ChatbotService:
         message: str,
         intent: Optional[str],
     ) -> None:
-        if not self.chat_message_repository:
+        if not self.chat_message_service:
             return
 
         if not chatbot_id or not session_id:
             return
 
-        doc = {
-            "organisationId": int(organisation_id),
-            "chatbotId": chatbot_id,
-            "sessionId": session_id,
-            "sender": sender,
-            "senderUserId": sender_user_id,
-            "senderName": None,
-            "message": message or "",
-            "timestamp": datetime.now(timezone.utc),
-            "metadata": {},
-        }
-
-        if intent:
-            doc["metadata"]["intent"] = intent
-
-        self.chat_message_repository.collection.insert_one(doc)
-
-
-
+        self.chat_message_service.save_message(
+            organisation_id=int(organisation_id),
+            chatbot_id=chatbot_id,
+            session_id=session_id,
+            sender=sender,
+            sender_user_id=sender_user_id,
+            message=message or "",
+            intent=intent,
+        )
 
     def _quick_replies_for(self, industry: str, intent: str) -> List[str]:
         return [
