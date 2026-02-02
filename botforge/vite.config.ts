@@ -9,17 +9,17 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       host: '0.0.0.0',
       proxy: {
-        '/api': {
-          target: 'https://botforge-xrki.onrender.com',
-          changeOrigin: true,
-          secure: true,
-        },
-        '/health': {
-          target: 'https://botforge-xrki.onrender.com',
-          changeOrigin: true,
-          secure: true,
-        },
+      "/api/": {
+        target: "https://botforge-xrki.onrender.com",
+        changeOrigin: true,
+        secure: true,
       },
+      "/health": {
+        target: "https://botforge-xrki.onrender.com",
+        changeOrigin: true,
+        secure: true,
+      },
+    },
     },
       plugins: [react()],
       define: {
@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => {
       },
       resolve: {
         alias: {
-          '@': path.resolve(__dirname, '.'),
+          '@': path.resolve(__dirname, 'src'),
         }
       }
     };
