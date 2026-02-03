@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Send, Bot, User as UserIcon, Loader2 } from 'lucide-react';
+import { Send, Bot, User as UserIcon, Loader2, Mic } from 'lucide-react';
 import { chatService } from '../api';
 import { User } from '../types';
 
@@ -45,9 +45,13 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
   }, [messages, isLoading]);
 
   // Read company_id from query params or user
+  // For Patrons (system_role_id === 2), they will typically have a company_id in the URL
   const [searchParams] = useSearchParams();
   const queryCompanyId = searchParams.get("company_id");
   const activeCompanyId = queryCompanyId ? parseInt(queryCompanyId) : user?.organisation_id;
+
+  // Determine if we are in Patron mode to route to correct API endpoints if needed
+  const isPatron = user?.system_role_id === 2;
 
   // Fetch initial welcome message
   useEffect(() => {
@@ -55,6 +59,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
 
     const fetchWelcome = async () => {
       setIsLoading(true);
+      // chatService.welcome now points to /api/patron/chat/welcome
       const res = await chatService.welcome(activeCompanyId, sessionId);
       if (res.ok) {
         setMessages([{
@@ -87,6 +92,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
     setInput('');
     setIsLoading(true);
 
+    // chatService.chat now points to /api/patron/chat
     const res = await chatService.chat({
       company_id: activeCompanyId,
       message: trimmed,
@@ -196,22 +202,34 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
           )}
 
           {/* Text Input */}
-          <div className="relative flex items-center">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendMessage(input)}
-              placeholder="Ask me anything..."
-              className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-4 pl-6 pr-14 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-900"
-            />
-            <button
-              onClick={() => sendMessage(input)}
-              disabled={!input.trim() || isLoading}
-              className="absolute right-3 p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:bg-gray-400 transition-colors"
-            >
-              <Send size={20} />
-            </button>
+          <div className="relative flex items-center gap-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && sendMessage(input)}
+                placeholder="Ask me anything..."
+                className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-4 pl-6 pr-14 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-900"
+              />
+              <button
+                onClick={() => sendMessage(input)}
+                disabled={!input.trim() || isLoading}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:bg-gray-400 transition-colors"
+              >
+                <Send size={20} />
+              </button>
+            </div>
+            {/* Added Voice Button for Patron Voice API */}
+            {isPatron && (
+              <button
+                title="Voice Chat"
+                className="p-4 bg-gray-100 text-gray-600 rounded-2xl hover:bg-gray-200 transition-colors"
+                onClick={() => alert("Voice recording logic would go here, calling chatService.chatVoice")}
+              >
+                <Mic size={20} />
+              </button>
+            )}
           </div>
           <p className="text-center text-[10px] text-gray-400">
             BotForge AI can make mistakes. Check important info.
