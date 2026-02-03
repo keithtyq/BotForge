@@ -635,7 +635,7 @@ def update_user_role(user_id):
             if u.organisation_id is not None and org_role.organisation_id != u.organisation_id:
                 return jsonify({"ok": False, "error": "Cannot assign role from a different organisation."}), 400
 
-            u.system_role_id = None
+            u.system_role_id = 1
             u.org_role_id = org_role.org_role_id
             u.organisation_id = org_role.organisation_id
             role_desc = f"Organisation role updated to {org_role.name}"
@@ -649,7 +649,6 @@ def update_user_role(user_id):
         db.session.rollback()
         return jsonify({"ok": False, "error": f"DB constraint failed: {str(e.orig)}"}), 400
 
-    # 🔔 Notify ONLY if changed (after commit is safest)
     if old_system_role != u.system_role_id or old_org_role != u.org_role_id:
         notif_service = NotificationService(
             notification_repo=NotificationRepository(),
