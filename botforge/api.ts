@@ -426,6 +426,15 @@ export const chatService = {
     async chat(data: { company_id: number; message: string; session_id?: string; user_id?: number }) {
         return api.post<any>('/api/chat', data);
     },
+    async chatVoice(data: { organisation_id: number; audio: Blob; session_id?: string }) {
+        const form = new FormData();
+        form.append('audio', data.audio, 'speech.webm');
+        form.append('organisation_id', String(data.organisation_id));
+        if (data.session_id) {
+            form.append('session_id', data.session_id);
+        }
+        return api.requestForm<any>('/api/patron/chat-voice', 'POST', form); //
+    }
 };
 
 export const statsService = {
