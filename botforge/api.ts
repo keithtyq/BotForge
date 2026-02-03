@@ -1,5 +1,5 @@
 const RAW_API_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export const API_URL = RAW_API_URL.replace(/\/$/, "");
 export interface ApiResponse<T = any> {
@@ -392,6 +392,10 @@ export const orgRoleService = {
 
     async assignPermissions(roleId: number, permissionIds: number[]) {
         return api.put<any>(`/api/org-roles/${roleId}/permissions`, { permission_ids: permissionIds });
+    },
+
+    async listPermissions() {
+        return api.get<any>('/api/org-roles/permissions');
     }
 };
 
@@ -449,7 +453,7 @@ export const statsService = {
 };
 
 export const patronService = {
-  async getChatDirectory() {
-    return api.get<any>('/api/patron/chat-directory');
-  }
+    async getChatDirectory() {
+        return api.get<any>('/api/patron/chat-directory');
+    }
 };

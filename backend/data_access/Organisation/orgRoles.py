@@ -6,11 +6,12 @@ from sqlalchemy.exc import IntegrityError
 class OrgRoleRepository:
 
     # create
-    def create(self, organisation_id: int, name: str, description: str | None):
+    def create(self, organisation_id: int, name: str, description: str | None, is_default: bool = False):
         role = OrgRole(
             organisation_id=organisation_id,
             name=name,
-            description=description
+            description=description,
+            is_default=is_default
         )
         try:
             db.session.add(role)

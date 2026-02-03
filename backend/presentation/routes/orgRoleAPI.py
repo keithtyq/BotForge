@@ -5,8 +5,22 @@ from backend.data_access.Organisation.orgRoles import OrgRoleRepository
 from backend.data_access.Organisation.orgRolePermissions import OrgRolePermissionRepository
 from backend.application.Organisation.orgRoles import ManageOrgRoles
 from backend.application.Organisation.orgRolePermissions import ManageOrgRolePermissions
+from backend.models import OrgPermission
 
 org_roles_bp = Blueprint("org_roles", __name__, url_prefix="/api/org-roles")
+
+
+@org_roles_bp.get("/permissions")
+def list_permissions():
+    permissions = OrgPermission.query.order_by(OrgPermission.code.asc()).all()
+    return jsonify([
+        {
+            "id": p.org_permission_id,
+            "code": p.code,
+            "description": p.description
+        }
+        for p in permissions
+    ]), 200
 
 
 @org_roles_bp.get("/")
