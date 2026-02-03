@@ -16,7 +16,7 @@ export const ManageOrgProfile: React.FC<ManageOrgProfileProps> = ({ onBack }) =>
 
     // Company Profile State
     const [companyName, setCompanyName] = useState('');
-    const [industry, setIndustry] = useState('Technology');
+    const [industry, setIndustry] = useState('Retail');
     const [description, setDescription] = useState('');
     const [location, setLocation] = useState('');
     const [websiteUrl, setWebsiteUrl] = useState('');
@@ -39,7 +39,7 @@ export const ManageOrgProfile: React.FC<ManageOrgProfileProps> = ({ onBack }) =>
                     if (res.ok && res.organisation) {
                         const org = res.organisation;
                         setCompanyName(org.name || '');
-                        setIndustry(org.industry || 'Technology');
+                        setIndustry(org.industry || 'Retail');
                         setDescription(org.description || '');
                         setLocation(org.location || '');
                         setWebsiteUrl(org.website_url || '');
@@ -145,7 +145,7 @@ export const ManageOrgProfile: React.FC<ManageOrgProfileProps> = ({ onBack }) =>
                                 onChange={(e) => setIndustry(e.target.value)}
                                 className="w-full p-3 border border-gray-400 rounded text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200 appearance-none bg-white"
                             >
-                                <option value="Technology">Technology</option>
+                    
                                 <option value="F&B">F&B</option>
                                 <option value="Retail">Retail</option>
                                 <option value="Education">Education</option>
