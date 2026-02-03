@@ -29,6 +29,7 @@ export interface User {
   org_role_name?: string;
   is_profile_complete?: boolean;
   subscription_id?: number;
+  permissions?: string[];
 }
 
 export interface Testimonial {

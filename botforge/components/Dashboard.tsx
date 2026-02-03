@@ -32,6 +32,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
     const isOrgAdmin = user?.org_role_name === 'ORG_ADMIN';
     const isStaff = user?.org_role_name === 'STAFF';
 
+    const hasPermission = (code: string) => {
+        if (isOrgAdmin) return true;
+        return user?.permissions?.includes(code) || false;
+    };
+
     const [searchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState<string>(searchParams.get('tab') || 'analytics');
 
@@ -329,19 +334,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                                 </button>
                             )} */}
 
-                            <button
-                                onClick={() => setActiveTab('customise')}
-                                className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'customise' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
-                            >
-                                Customise Chatbot
-                            </button>
 
-                            <button
-                                onClick={() => setActiveTab('history')}
-                                className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'history' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
-                            >
-                                View Chat History
-                            </button>
+                            {hasPermission('MANAGE_CHATBOT') && (
+                                <button
+                                    onClick={() => setActiveTab('customise')}
+                                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'customise' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
+                                >
+                                    Customise Chatbot
+                                </button>
+                            )}
+
+                            {hasPermission('VIEW_CHAT_HISTORY') && (
+                                <button
+                                    onClick={() => setActiveTab('history')}
+                                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'history' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
+                                >
+                                    View Chat History
+                                </button>
+                            )}
 
                             {isOrgAdmin && (
                                 <button

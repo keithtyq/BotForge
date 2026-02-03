@@ -97,14 +97,22 @@ def update_role(org_role_id):
     }), 200
 
 
+from backend.data_access.Users.users import UserRepository
+
 @org_roles_bp.delete("/<int:org_role_id>")
 def delete_role(org_role_id):
-    service = ManageOrgRoles(OrgRoleRepository())
+    service = ManageOrgRoles(
+        role_repo=OrgRoleRepository(),
+        user_repo=UserRepository(),
+        permission_repo=OrgRolePermissionRepository()
+    )
 
     try:
         service.delete_role(org_role_id)
     except ValueError as e:
         return {"error": str(e)}, 404
+    except RuntimeError as e:
+        return {"error": str(e)}, 400
 
     return jsonify({"message": "Role deleted"}), 200
 

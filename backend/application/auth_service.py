@@ -13,6 +13,8 @@ from backend.models import (
     OrganisationRetail,
     AppUser,
     OrgRole,
+    OrgPermission,
+    OrgRolePermission,
 )
 from backend.application.notification_service import NotificationService
 from backend.data_access.Notifications.notifications import NotificationRepository
@@ -208,6 +210,17 @@ def login(payload: dict) -> dict:
             is_profile_complete = True
         subscription_id = org.subscription_id
 
+    # Fetch permissions
+    permissions = []
+    if user.org_role_id:
+        perms = (
+            db.session.query(OrgPermission.code)
+            .join(OrgRolePermission, OrgRolePermission.org_permission_id == OrgPermission.org_permission_id)
+            .filter(OrgRolePermission.org_role_id == user.org_role_id)
+            .all()
+        )
+        permissions = [p[0] for p in perms]
+
     return {
         "ok": True,
         "message": "Logged in.",
@@ -220,7 +233,8 @@ def login(payload: dict) -> dict:
             "org_role_name": user.org_role.name if user.org_role else None,
             "organisation_id": user.organisation_id,
             "is_profile_complete": is_profile_complete,
-            "subscription_id": subscription_id
+            "subscription_id": subscription_id,
+            "permissions": permissions
         }
     }
 
