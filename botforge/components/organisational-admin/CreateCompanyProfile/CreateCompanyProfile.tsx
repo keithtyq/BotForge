@@ -10,7 +10,7 @@ interface CreateCompanyProfileProps {
 const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }) => {
   // Core & Common Fields
   const [companyName, setCompanyName] = useState('');
-  const [industry, setIndustry] = useState('Technology');
+  const [industry, setIndustry] = useState('technology'); // Match backend lowercase mapping
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [city, setCity] = useState('');
@@ -20,35 +20,24 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
   const [contactPhone, setContactPhone] = useState('');
   const [businessHours, setBusinessHours] = useState('');
 
-  // Restaurant-specific fields
+  // Industry-specific fields
   const [cuisineType, setCuisineType] = useState('');
   const [restaurantStyle, setRestaurantStyle] = useState('');
   const [diningOptions, setDiningOptions] = useState('');
   const [supportsReservations, setSupportsReservations] = useState(false);
   const [reservationLink, setReservationLink] = useState('');
-  const [priceRange, setPriceRange] = useState('');
+  const [priceRange, setPriceRange] = useState('$');
   const [seatingCapacity, setSeatingCapacity] = useState('');
   const [specialties, setSpecialties] = useState('');
 
-  // Education-specific fields
+  // Education fields
   const [institutionType, setInstitutionType] = useState('');
   const [targetAudience, setTargetAudience] = useState('');
   const [courseTypes, setCourseTypes] = useState('');
-  const [deliveryMode, setDeliveryMode] = useState('');
-  const [intakePeriods, setIntakePeriods] = useState('');
-  const [applicationLink, setApplicationLink] = useState('');
-  const [responseTime, setResponseTime] = useState('');
-  const [keyPrograms, setKeyPrograms] = useState('');
 
-  // Retail-specific fields
-  const [retailType, setRetailType] = useState('');
+  // Retail fields
   const [productCategories, setProductCategories] = useState('');
-  const [hasPhysicalStore, setHasPhysicalStore] = useState(true);
   const [hasOnlineStore, setHasOnlineStore] = useState(false);
-  const [onlineStoreUrl, setOnlineStoreUrl] = useState('');
-  const [deliveryOptions, setDeliveryOptions] = useState('');
-  const [returnPolicy, setReturnPolicy] = useState('');
-  const [paymentMethods, setPaymentMethods] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -57,7 +46,10 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
-        if (user.system_role_id === 0 && onSuccess) onSuccess();
+        // Skip if profile is complete or user is a System Admin (ID 0)
+        if ((user.is_profile_complete || user.system_role_id === 0) && onSuccess) {
+          onSuccess();
+        }
       } catch (e) {
         console.error("Error parsing user data", e);
       }
@@ -76,10 +68,11 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
       }
       const user = JSON.parse(storedUser);
 
+      // Construct payload to match backend auth_service.update_org_profile
       const payload = {
         organisation_id: user.organisation_id,
-        name: companyName,
-        industry,
+        name: companyName, // Backend accepts "name" or "company_name"
+        industry: industry, // Value is already lowercase (e.g., 'restaurant', 'retail')
         description,
         location,
         city,
@@ -88,45 +81,33 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
         contact_email: contactEmail,
         contact_phone: contactPhone,
         business_hours: businessHours,
-        // Industry Specifics
-        ...(industry === 'F&B' && {
+        // Industry Specific Subtypes
+        ...(industry === 'restaurant' && {
           cuisine_type: cuisineType,
           restaurant_style: restaurantStyle,
           dining_options: diningOptions,
           supports_reservations: supportsReservations,
           reservation_link: reservationLink,
           price_range: priceRange,
-          seating_capacity: parseInt(seatingCapacity) || 0,
+          seating_capacity: parseInt(seatingCapacity) || 0, // Backend expects integer
           specialties
         }),
-        ...(industry === 'Education' && {
+        ...(industry === 'education' && {
           institution_type: institutionType,
           target_audience: targetAudience,
-          course_types: courseTypes,
-          delivery_mode: deliveryMode,
-          intake_periods: intakePeriods,
-          application_link: applicationLink,
-          response_time: responseTime,
-          key_programs: keyPrograms
+          course_types: courseTypes
         }),
-        ...(industry === 'Retail' && {
-          retail_type: retailType,
+        ...(industry === 'retail' && {
           product_categories: productCategories,
-          has_physical_store: hasPhysicalStore,
-          has_online_store: hasOnlineStore,
-          online_store_url: onlineStoreUrl,
-          delivery_options: deliveryOptions,
-          return_policy: returnPolicy,
-          payment_methods: paymentMethods
+          has_online_store: hasOnlineStore
         })
       };
 
       const res = await authService.updateOrgProfile(payload);
       if (res.ok && onSuccess) {
-        // Update local storage to reflect profile completion
+        // Update local storage to reflect profile completion for current session
         const updatedUser = { ...user, is_profile_complete: true };
         localStorage.setItem('user', JSON.stringify(updatedUser));
-
         onSuccess();
       } else {
         alert("Failed to update profile: " + (res.error || "Unknown error"));
@@ -143,7 +124,6 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
       <main>
         <h1>Set up your Company Profile</h1>
         <form className="setup-form" onSubmit={handleSubmit}>
-          {/* Common Section */}
           <div className="form-group">
             <label>Company Name:</label>
             <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} required />
@@ -152,10 +132,10 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
           <div className="form-group">
             <label>Industry:</label>
             <select value={industry} onChange={(e) => setIndustry(e.target.value)}>
-              <option value="Technology">Technology</option>
-              <option value="F&B">F&B (Restaurant)</option>
-              <option value="Retail">Retail</option>
-              <option value="Education">Education</option>
+              <option value="technology">Technology</option>
+              <option value="restaurant">F&B (Restaurant)</option>
+              <option value="retail">Retail</option>
+              <option value="education">Education</option>
             </select>
           </div>
 
@@ -167,21 +147,21 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
           <div className="form-row">
             <div className="form-group">
               <label>City:</label>
-              <input type="text" value={city} onChange={(e) => setCity(e.target.value)} />
+              <input type="text" value={city} onChange={(e) => setCity(e.target.value)} required />
             </div>
             <div className="form-group">
               <label>Country:</label>
-              <input type="text" value={country} onChange={(e) => setCountry(e.target.value)} />
+              <input type="text" value={country} onChange={(e) => setCountry(e.target.value)} required />
             </div>
           </div>
 
-          {/* Industry Specific Fields */}
-          {industry === 'F&B' && (
+          {/* Industry Specific Section */}
+          {industry === 'restaurant' && (
             <div className="industry-section">
               <h3>Restaurant Details</h3>
               <div className="form-group">
-                <label>Cuisine Type (e.g., Italian, Fusion):</label>
-                <input type="text" value={cuisineType} onChange={(e) => setCuisineType(e.target.value)} />
+                <label>Cuisine Type:</label>
+                <input type="text" value={cuisineType} onChange={(e) => setCuisineType(e.target.value)} placeholder="e.g. Italian" />
               </div>
               <div className="form-group">
                 <label>Price Range:</label>
@@ -192,6 +172,10 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
                 </select>
               </div>
               <div className="form-group">
+                <label>Seating Capacity:</label>
+                <input type="number" value={seatingCapacity} onChange={(e) => setSeatingCapacity(e.target.value)} />
+              </div>
+              <div className="form-group">
                 <label>
                   <input type="checkbox" checked={supportsReservations} onChange={(e) => setSupportsReservations(e.target.checked)} />
                   Supports Reservations
@@ -200,12 +184,12 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
             </div>
           )}
 
-          {industry === 'Retail' && (
+          {industry === 'retail' && (
             <div className="industry-section">
               <h3>Retail Details</h3>
               <div className="form-group">
                 <label>Product Categories:</label>
-                <input type="text" placeholder="Shoes, Bags, Accessories" value={productCategories} onChange={(e) => setProductCategories(e.target.value)} />
+                <input type="text" value={productCategories} onChange={(e) => setProductCategories(e.target.value)} placeholder="e.g. Fashion, Electronics" />
               </div>
               <div className="form-group">
                 <label>
@@ -218,7 +202,7 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
 
           <div className="submit-container">
             <button type="submit" className="btn-submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="animate-spin h-5 w-5" />}
+              {isSubmitting && <Loader2 className="animate-spin h-5 w-5 mr-2" />}
               {isSubmitting ? 'Saving...' : 'Continue to Pricing'}
             </button>
           </div>
