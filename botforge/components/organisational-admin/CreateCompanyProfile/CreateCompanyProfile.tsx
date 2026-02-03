@@ -10,7 +10,7 @@ interface CreateCompanyProfileProps {
 const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }) => {
   // Core & Common Fields
   const [companyName, setCompanyName] = useState('');
-  const [industry, setIndustry] = useState('technology'); // Match backend lowercase mapping
+  const [industry, setIndustry] = useState('retail'); // Match backend lowercase mapping
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [city, setCity] = useState('');
@@ -132,7 +132,7 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
           <div className="form-group">
             <label>Industry:</label>
             <select value={industry} onChange={(e) => setIndustry(e.target.value)}>
-              <option value="technology">Technology</option>
+              
               <option value="restaurant">F&B (Restaurant)</option>
               <option value="retail">Retail</option>
               <option value="education">Education</option>

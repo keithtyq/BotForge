@@ -168,7 +168,14 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
               ? (!user.is_profile_complete ? (
                   <CreateCompanyProfile
                     onSuccess={() => {
-                      navigate('/dashboard', { replace: true });
+                      if (!user) return;
+
+                      const updatedUser = { ...user, is_profile_complete: true };
+                      setUser(updatedUser);
+                      localStorage.setItem('user', JSON.stringify(updatedUser));
+
+                      // redirect to subscription selection
+                      navigate('/dashboard?tab=subscription', { replace: true });
                     }}
                   />
                 ) : (
