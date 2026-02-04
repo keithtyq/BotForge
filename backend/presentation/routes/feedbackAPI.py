@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
 from backend.data_access.Feedback.feedback import FeedbackRepository
 from backend.data_access.Users.users import UserRepository
+from backend.data_access.Notifications.notifications import NotificationRepository
+from backend.application.notification_service import NotificationService
 from backend.application.Feedback.submitFeedback import SubmitFeedbackUseCase
 
 feedback_bp = Blueprint("feedback", __name__, url_prefix="/api")
@@ -18,11 +20,23 @@ def submit_feedback():
         "content": "The chatbot works well but lags occasionally."
     }
     """
+
     payload = request.get_json() or {}
 
-    repo = FeedbackRepository()
+    # Repositories
+    feedback_repo = FeedbackRepository()
     user_repo = UserRepository()
-    use_case = SubmitFeedbackUseCase(repo, user_repo) #submitFeedback.py requires two arguments(feedback_repo and user_repo)
+    notification_repo = NotificationRepository()
+
+    # Services
+    notification_service = NotificationService(notification_repo, user_repo)
+
+    # Use case
+    use_case = SubmitFeedbackUseCase(
+        feedback_repo,
+        user_repo,
+        notification_service
+    )
 
     result = use_case.execute(payload)
 
