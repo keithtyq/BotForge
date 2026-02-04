@@ -10,6 +10,17 @@
 
 # backend/data_access/ai/template_repo.py
 
+from backend.models import ChatbotTemplate
+
+LANGUAGE_MAP = {
+    "english": "en",
+    "en": "en",
+    "french": "fr",
+    "fr": "fr",
+    "chinese": "zh",
+    "zh": "zh",
+}
+
 class TemplateRepository:
     """
     Data access layer for chatbot response templates.
@@ -22,7 +33,7 @@ class TemplateRepository:
       - industry default templates (fallback)
     """
 
-    # Industry-level default templates
+    # Industry-level default templates (English fallback)
     DEFAULT_TEMPLATES = {
     "restaurant": {
         "greeting": "Hi! Welcome to {{company_name}} 😊 How can I help you today?",
@@ -90,25 +101,69 @@ class TemplateRepository:
         # }
     }
 
-    def get_template(self, company_id: str, industry: str, intent: str) -> str:
+    def _normalize_language(self, language: str | None) -> str:
+        if not language:
+            return "en"
+        return LANGUAGE_MAP.get(language.strip().lower(), "en")
+
+    def get_template(self, company_id: str, industry: str, intent: str, language: str | None = None) -> str:
         """
         Returns a template string using:
-        1) company override if exists
-        2) industry default
-        3) default fallback
+        1) company override in DB
+        2) industry default in DB
+        3) default fallback in DB
+        4) English in-code fallback
         """
         intent = intent or "fallback"
         industry = industry or "default"
+        language = self._normalize_language(language)
 
-        # 1) Company override
-        company_templates = self.COMPANY_OVERRIDES.get(company_id, {})
-        if intent in company_templates:
-            return company_templates[intent]
+        def _db_lookup(org_id: int | None, ind: str, lang: str, it: str):
+            return (
+                ChatbotTemplate.query
+                .filter_by(
+                    organisation_id=org_id,
+                    industry=ind,
+                    language=lang,
+                    intent=it,
+                )
+                .order_by(ChatbotTemplate.template_id.asc())
+                .first()
+            )
 
-        # 2) Industry template
+        org_id = None
+        try:
+            org_id = int(company_id) if company_id is not None else None
+        except (TypeError, ValueError):
+            org_id = None
+
+        # 1) Company override (language)
+        if org_id is not None:
+            row = _db_lookup(org_id, industry, language, intent)
+            if row:
+                return row.template_text
+            row = _db_lookup(org_id, industry, language, "fallback")
+            if row:
+                return row.template_text
+
+        # 2) Industry default (language)
+        row = _db_lookup(None, industry, language, intent)
+        if row:
+            return row.template_text
+        row = _db_lookup(None, industry, language, "fallback")
+        if row:
+            return row.template_text
+
+        # 3) Default industry (language)
+        row = _db_lookup(None, "default", language, intent)
+        if row:
+            return row.template_text
+        row = _db_lookup(None, "default", language, "fallback")
+        if row:
+            return row.template_text
+
+        # 4) English in-code fallback
         industry_templates = self.DEFAULT_TEMPLATES.get(industry, self.DEFAULT_TEMPLATES["default"])
         if intent in industry_templates:
             return industry_templates[intent]
-
-        # 3) Fallback
         return industry_templates.get("fallback") or self.DEFAULT_TEMPLATES["default"]["fallback"]

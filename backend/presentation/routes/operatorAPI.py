@@ -18,6 +18,7 @@ from backend.data_access.ai.company_profile_repo import CompanyProfileRepository
 from backend.data_access.ai.chatbot_repo import ChatbotRepository
 from backend.data_access.ai.personality_repo import PersonalityRepository
 from backend.data_access.ai.template_repo import TemplateRepository
+from backend.data_access.ai.quick_reply_repo import QuickReplyRepository
 from backend.data_access.Users.users import UserRepository
 from backend.data_access.Notifications.notifications import NotificationRepository
 from backend.data_access.ChatMessages.chatMessages import ChatMessageRepository
@@ -35,6 +36,7 @@ profile_service = UserProfileService(user_repo, notification_service)
 def _build_chatbot_service() -> ChatbotService:
     company_repo = CompanyProfileRepository()
     template_repo = TemplateRepository()
+    quick_reply_repo = QuickReplyRepository()
     template_engine = TemplateEngine()
     intent_service = EmbeddingIntentService()
     chatbot_repo = ChatbotRepository()
@@ -50,6 +52,7 @@ def _build_chatbot_service() -> ChatbotService:
         chatbot_repository=chatbot_repo,
         personality_repository=personality_repo,
         chat_message_service=chat_message_service,
+        quick_reply_repository=quick_reply_repo,
     )
 
 # =================================

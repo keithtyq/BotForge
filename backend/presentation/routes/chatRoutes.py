@@ -9,6 +9,7 @@ from backend.data_access.ai.company_profile_repo import CompanyProfileRepository
 from backend.data_access.ai.chatbot_repo import ChatbotRepository
 from backend.data_access.ai.personality_repo import PersonalityRepository
 from backend.data_access.ai.template_repo import TemplateRepository
+from backend.data_access.ai.quick_reply_repo import QuickReplyRepository
 from backend.data_access.ChatMessages.chatMessages import ChatMessageRepository
 from backend.infrastructure.mongodb.mongo_client import get_mongo_db
 
@@ -41,6 +42,7 @@ def chat_welcome():
             chatbot_repository=chatbot_repo,
             personality_repository=PersonalityRepository(),
             chat_message_service=chat_message_service,  # ✅ FIXED
+            quick_reply_repository=QuickReplyRepository(),
         )
 
         result = chatbot_service.welcome(
@@ -89,6 +91,7 @@ def chat():
             chatbot_repository=chatbot_repo,
             personality_repository=PersonalityRepository(),
             chat_message_service=chat_message_service,
+            quick_reply_repository=QuickReplyRepository(),
         )
 
         result = chatbot_service.chat(

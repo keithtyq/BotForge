@@ -158,22 +158,6 @@ export const CustomizeChatbot: React.FC<CustomizeChatbotProps> = ({ onBack, orga
           ></textarea>
         </div>
 
-        {/* Primary Language */}
-        <div>
-          <label className="block text-sm font-bold text-gray-800 mb-1">Primary Language:</label>
-          <div className="relative">
-            <select
-              value={settings.primary_language}
-              onChange={(e) => handleChange('primary_language', e.target.value)}
-              className="w-full border-2 border-gray-400 rounded px-3 py-2 outline-none focus:border-blue-500 appearance-none bg-white text-gray-700 font-medium"
-            >
-              <option value="English">English</option>
-              <option value="Spanish">Spanish (Coming Soon)</option>
-              <option value="Chinese">Chinese (Coming Soon)</option>
-            </select>
-          </div>
-        </div>
-
         {/* Toggles */}
         <div className="pt-4 space-y-4">
           <div className="flex items-center">

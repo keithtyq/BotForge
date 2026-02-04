@@ -11,6 +11,7 @@ class ChatbotService:
         chatbot_repository=None,
         personality_repository=None,
         chat_message_service=None, 
+        quick_reply_repository=None,
     ):
         self.intent_service = intent_service
         self.company_repository = company_repository
@@ -19,6 +20,7 @@ class ChatbotService:
         self.chatbot_repository = chatbot_repository
         self.personality_repository = personality_repository
         self.chat_message_service = chat_message_service
+        self.quick_reply_repository = quick_reply_repository
 
     # CHAT
     def chat(
@@ -48,10 +50,14 @@ class ChatbotService:
 
         industry = (company or {}).get("industry", "default")
 
+        detected_language, lang_conf = self._detect_language(message)
+        reply_language = "en"
+
         template = self.template_repository.get_template(
             company_id=company_id,
             industry=industry,
             intent=intent,
+            language=reply_language,
         )
 
         reply = self.template_engine.render(
@@ -75,7 +81,7 @@ class ChatbotService:
         elif chatbot and chatbot.allow_emojis is True:
             reply = self._ensure_emoji(reply)
 
-        quick_replies = self._quick_replies_for(industry, intent)
+        quick_replies = self._quick_replies_for(company_id, industry, intent, "en")
 
         # Persist USER message
         self._save_chat_message(
@@ -105,6 +111,9 @@ class ChatbotService:
             "entities": entities,
             "reply": reply,
             "quick_replies": quick_replies,
+            "language": reply_language,
+            "language_confidence": lang_conf,
+            "detected_language": detected_language,
         }
 
     # WELCOME
@@ -128,6 +137,7 @@ class ChatbotService:
 
         industry = (company or {}).get("industry", "default")
 
+        language = "en"
         if chatbot and chatbot.welcome_message:
             reply = self.template_engine.render(
                 template=chatbot.welcome_message,
@@ -139,6 +149,7 @@ class ChatbotService:
                 company_id=company_id,
                 industry=industry,
                 intent="greet",
+                language=language,
             )
             reply = self.template_engine.render(
                 template=template,
@@ -172,7 +183,9 @@ class ChatbotService:
             "confidence": 1.0,
             "entities": [],
             "reply": reply,
-            "quick_replies": self._quick_replies_for(industry, "greet"),
+            "quick_replies": self._quick_replies_for(company_id, industry, "greet", "en"),
+            "language": language,
+            "language_confidence": 1.0,
         }
 
     # HELPERS
@@ -202,14 +215,22 @@ class ChatbotService:
             intent=intent,
         )
 
-    def _quick_replies_for(self, industry: str, intent: str) -> List[str]:
-        return [
-            "Business hours",
-            "Location",
-            "Pricing",
-            "Contact support",
-            "Make a booking",
-        ]
+    def _quick_replies_for(self, company_id: str | int, industry: str, intent: str, language: str) -> List[str]:
+        if not self.quick_reply_repository:
+            return [
+                "Business hours",
+                "Location",
+                "Pricing",
+                "Contact support",
+                "Make a booking",
+            ]
+
+        return self.quick_reply_repository.get_quick_replies(
+            company_id=company_id,
+            industry=industry,
+            intent=intent,
+            language=language,
+        )
 
     def _strip_emojis(self, text: str) -> str:
         return re.sub(
@@ -233,3 +254,30 @@ class ChatbotService:
             return f"Certainly. {text} Please let me know if you need further assistance."
 
         return text
+
+    def _detect_language(self, text: str) -> tuple[str, float]:
+        if not text:
+            return "en", 0.0
+
+        lower = text.lower()
+
+        # Chinese (CJK)
+        if re.search(r"[\u4e00-\u9fff]", text):
+            return "zh", 0.99
+
+        # French accents and common words
+        if re.search(r"[àâçéèêëîïôûùüÿœæ]", lower):
+            return "fr", 0.85
+
+        french_words = {
+            "bonjour", "salut", "merci", "s'il", "vous", "aidez", "aide",
+            "adresse", "prix", "tarif", "réservation", "reserver", "réserver",
+            "heures", "ouverture", "fermeture", "où", "où", "ici", "aujourd'hui",
+        }
+        tokens = re.findall(r"[a-zA-ZÀ-ÿ']+", lower)
+        if tokens:
+            hits = sum(1 for t in tokens if t in french_words)
+            if hits >= 1:
+                return "fr", 0.7
+
+        return "en", 0.6

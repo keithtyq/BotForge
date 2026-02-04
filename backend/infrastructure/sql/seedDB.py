@@ -39,7 +39,7 @@ try:
     "system_role", "subscription", "feature", "subscription_features",
     "organisation", "org_role", "org_permission", "org_role_permission",
     "personality", "app_user", "faq", "notification",
-    "feedback", "chatbot", "analytics"
+    "feedback", "chatbot", "chatbot_template", "chatbot_quick_reply", "analytics"
     ]
 
     print("\nRow counts:")

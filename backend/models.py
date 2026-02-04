@@ -257,6 +257,31 @@ class Chatbot(db.Model):
     primary_language = db.Column(db.String(10), nullable=False, default="English")
     tone = db.Column(db.String(20), nullable=False, default="Friendly")
     allow_emojis = db.Column(db.Boolean, nullable=False, default=True)
+    auto_detect_language = db.Column(db.Boolean, nullable=False, default=False)
+
+
+class ChatbotTemplate(db.Model):
+    __tablename__ = "chatbot_template"
+
+    template_id = db.Column(db.Integer, primary_key=True)
+    organisation_id = db.Column(db.Integer, db.ForeignKey("organisation.organisation_id"), nullable=True)
+    industry = db.Column(db.String(50), nullable=False, default="default")
+    intent = db.Column(db.String(50), nullable=False, default="fallback")
+    language = db.Column(db.String(5), nullable=False, default="en")
+    template_text = db.Column(db.Text, nullable=False)
+    is_default = db.Column(db.Boolean, nullable=False, default=False)
+
+
+class ChatbotQuickReply(db.Model):
+    __tablename__ = "chatbot_quick_reply"
+
+    quick_reply_id = db.Column(db.Integer, primary_key=True)
+    organisation_id = db.Column(db.Integer, db.ForeignKey("organisation.organisation_id"), nullable=True)
+    industry = db.Column(db.String(50), nullable=False, default="default")
+    intent = db.Column(db.String(50), nullable=False, default="fallback")
+    language = db.Column(db.String(5), nullable=False, default="en")
+    text = db.Column(db.String(120), nullable=False)
+    display_order = db.Column(db.Integer, nullable=False, default=0)
 
 
 class Analytics(db.Model):
