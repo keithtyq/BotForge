@@ -1,12 +1,11 @@
 FROM python:3.11-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cpu
 
-# Build dependencies (only needed during pip install)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    ffmpeg \
     git \
     && rm -rf /var/lib/apt/lists/*
 
@@ -15,7 +14,9 @@ WORKDIR /install
 COPY requirements.txt .
 
 RUN pip install --upgrade pip \
-    && pip install --prefix=/install --no-cache-dir -r requirements.txt
+    && pip install --prefix=/install --no-cache-dir --prefer-binary --no-compile -r requirements.txt \
+    && find /install -name "tests" -type d -exec rm -rf {} + \
+    && find /install -name "__pycache__" -type d -exec rm -rf {} +
 
 
 FROM python:3.11-slim
@@ -25,19 +26,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Runtime dependencies ONLY
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy installed Python packages from builder
 COPY --from=builder /install /usr/local
-
 COPY backend ./backend
 
-# Security: run as non-root user
 RUN adduser --disabled-password --gecos '' appuser \
     && chown -R appuser /app
 
