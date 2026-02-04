@@ -43,20 +43,20 @@ def create_app():
         supports_credentials=False,
     )
 
-    # protected routes CORS
+    # allow CORS for authenticated routes
     CORS(
-        app,
-        resources={
-            r"/api/admin/*": {"origins": ["https://botforge-1.onrender.com", "http://localhost:3000"]},
-            r"/api/operator/*": {"origins": ["https://botforge-1.onrender.com", "http://localhost:3000"]},
-            r"/api/sysadmin/*": {"origins": ["https://botforge-1.onrender.com", "http://localhost:3000"]},
-            r"/api/org-admin/*": {"origins": ["https://botforge-1.onrender.com", "http://localhost:3000"]},
-            r"/api/org-roles/*": {"origins": ["https://botforge-1.onrender.com", "http://localhost:3000"]},
-            r"/api/notifications/*": {"origins": ["https://botforge-1.onrender.com", "http://localhost:3000"]},
-            r"/api/patron/*": {"origins": ["https://botforge-1.onrender.com", "http://localhost:3000"]},
-        },
-        supports_credentials=True,
-    )
+    app,
+    resources={
+        r"/api/*": {
+            "origins": [
+                "https://botforge-1.onrender.com",
+                "http://localhost:3000"
+            ]
+        }
+    },
+    supports_credentials=False,
+)
+
 
     from backend.presentation.routes.unregisteredAPI import unregistered_bp
     from backend.presentation.routes.faqAPI import faq_bp
