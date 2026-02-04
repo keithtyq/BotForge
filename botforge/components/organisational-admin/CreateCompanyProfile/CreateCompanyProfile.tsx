@@ -286,5 +286,3 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
 };
 
 export default CreateCompanyProfile;
-
-export default CreateCompanyProfile;
