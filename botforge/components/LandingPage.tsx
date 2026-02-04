@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Testimonial } from '../types';
-import { Search, RotateCw, Settings, Play, Star } from 'lucide-react';
+import { Search, RotateCw, Settings, Star } from 'lucide-react';
 import { featureService, publicService } from '../api';
 import { Link } from 'react-router-dom';
 
 export const LandingPage: React.FC = () => {
   const [features, setFeatures] = useState<any[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-  const [featuredVideo, setFeaturedVideo] = useState<{ url: string; title: string; description: string; } | null>(null);
+  const [featuredVideo, setFeaturedVideo] = useState<{
+    url: string;
+    title: string;
+    description: string;
+  } | null>(null);
+
+  const [landingImages, setLandingImages] = useState<any[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     const fetchFeatures = async () => {
-      // Default to subscription_id 1 for generic landing page features
       const response = await featureService.getFeatures(1);
       if (response.features) {
         setFeatures(response.features);
@@ -25,7 +31,7 @@ export const LandingPage: React.FC = () => {
           const mappedTestimonials: Testimonial[] = response.testimonials.map((t: any) => ({
             quote: t.content,
             author: t.author,
-            role: t.role, // Note: This displays the system role (e.g. OrgAdmin).
+            role: t.role,
             rating: t.rating
           }));
           setTestimonials(mappedTestimonials);
@@ -50,28 +56,54 @@ export const LandingPage: React.FC = () => {
       }
     };
 
+    const fetchLandingImages = async () => {
+      try {
+        const res = await publicService.getLandingImages();
+        if (res && Array.isArray(res)) {
+          setLandingImages(res);
+        }
+      } catch (error) {
+        console.error("Failed to fetch landing images", error);
+      }
+    };
 
     fetchFeatures();
     fetchTestimonials();
     fetchFeaturedVideo();
+    fetchLandingImages();
   }, []);
+
+  useEffect(() => {
+    if (landingImages.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) =>
+        (prev + 1) % landingImages.length
+      );
+    }, 3000); // Change every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [landingImages]);
 
   return (
     <div className="w-full">
+
       {/* Hero Section */}
       <div className="bg-slate-500 relative overflow-hidden">
-        {/* Abstract background elements if needed, keeping it simple to match wireframe style */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 opacity-90 z-0"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
           <div className="grid md:grid-cols-2 gap-12 items-center">
+
+            {/* Hero Image Carousel */}
             <div className="rounded-xl overflow-hidden shadow-2xl border-4 border-white/20">
               <img
-                src="https://picsum.photos/800/600?grayscale"
-                alt="BotForge Dashboard"
-                className="w-full h-auto object-cover"
+                src={landingImages[currentImageIndex]?.image_url || "/landing-images/default.png"}
+                alt={landingImages[currentImageIndex]?.alt_text || "BotForge Dashboard"}
+                className="w-full h-auto object-cover transition-opacity duration-700"
               />
             </div>
+
             <div className="text-white space-y-6">
               <h1 className="text-4xl md:text-5xl font-bold leading-tight">
                 Your all-in-one platform to create AI chatbots that deliver results
@@ -89,7 +121,6 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </div>
-
 
       {/* Patron Access Section */}
       <div className="bg-white py-16 border-b border-gray-200">
@@ -110,10 +141,10 @@ export const LandingPage: React.FC = () => {
         </div>
       </div>
 
-
       {/* Features Section */}
       <div id="features" className="bg-blue-50 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Our Features</h2>
             <p className="text-gray-600 text-lg">Forge the ultimate bot for your own needs.</p>
@@ -168,6 +199,7 @@ export const LandingPage: React.FC = () => {
               );
             })}
           </div>
+
         </div>
       </div>
 
@@ -184,6 +216,7 @@ export const LandingPage: React.FC = () => {
                 <p className="text-gray-800 mb-6 relative z-10 pt-2 text-lg font-medium leading-relaxed">
                   {t.quote}
                 </p>
+
                 <div className="flex justify-between items-center text-sm text-gray-500 border-t border-gray-300 pt-4">
                   <div>
                     <span className="font-bold text-gray-700">{t.author}</span>, {t.role}
@@ -192,17 +225,23 @@ export const LandingPage: React.FC = () => {
                     {[...Array(5)].map((_, starIndex) => (
                       <Star
                         key={starIndex}
-                        className={`h-5 w-5 ${starIndex < (t.rating || 5) ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                          }`}
+                        className={`h-5 w-5 ${
+                          starIndex < (t.rating || 5)
+                            ? 'text-yellow-400 fill-current'
+                            : 'text-gray-300'
+                        }`}
                       />
                     ))}
                   </div>
                 </div>
+
               </div>
             ))}
           </div>
+
         </div>
       </div>
+
     </div>
   );
 };

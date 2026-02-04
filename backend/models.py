@@ -1,6 +1,6 @@
 from backend import db
 from sqlalchemy.sql import func
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Organisation (base)
 
@@ -188,7 +188,7 @@ class FeaturedVideo(db.Model):
     url = db.Column(db.String(255))
     title = db.Column(db.String(100))
     description = db.Column(db.String(255))
-    updated_date = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
 
 # =========================
@@ -315,3 +315,14 @@ class ChatMessage(db.Model):
     message = db.Column(db.Text, nullable=False)
     intent = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, server_default=func.now())
+
+class LandingImage(db.Model):
+    __tablename__ = "landing_image"
+
+    image_id = db.Column(db.Integer, primary_key=True)
+    image_url = db.Column(db.String(255), nullable=False)
+    alt_text = db.Column(db.String(150))
+    display_order = db.Column(db.SmallInteger, default=0)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))

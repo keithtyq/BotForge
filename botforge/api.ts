@@ -114,6 +114,10 @@ export const authService = {
 };
 
 export const publicService = {
+    async getLandingImages() {
+        return api.get<any>('/api/public/landing-images');
+    },
+
     async getTestimonials() {
         return api.get<any>('/api/public/testimonials');
     },
