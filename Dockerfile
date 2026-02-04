@@ -1,27 +1,48 @@
+FROM python:3.11-slim AS builder
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Build dependencies (only needed during pip install)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    ffmpeg \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /install
+
+COPY requirements.txt .
+
+RUN pip install --upgrade pip \
+    && pip install --prefix=/install --no-cache-dir -r requirements.txt
+
+
 FROM python:3.11-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# System dependencies (vosk, pydub, torch-safe)
-RUN apt-get update && apt-get install -y \
+# Runtime dependencies ONLY
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
-    build-essential \
-    git \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY requirements.txt .
+# Copy installed Python packages from builder
+COPY --from=builder /install /usr/local
 
-# Copy backend only
 COPY backend ./backend
 
-# Install Python dependencies
-RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+# Security: run as non-root user
+RUN adduser --disabled-password --gecos '' appuser \
+    && chown -R appuser /app
+
+USER appuser
 
 EXPOSE 8000
 
-# Azure-compatible startup
 CMD ["gunicorn", "backend.run:app", "--bind", "0.0.0.0:8000", "--workers", "1"]
