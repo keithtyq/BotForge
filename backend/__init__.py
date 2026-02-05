@@ -3,13 +3,16 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
+import logging
 
 db = SQLAlchemy()
 
 def create_app():
     load_dotenv()
     app = Flask(__name__)
-
+    logging.getLogger("werkzeug").setLevel(logging.ERROR)
+    logging.basicConfig(level=logging.INFO)
+    
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret")
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
