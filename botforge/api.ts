@@ -274,6 +274,10 @@ export const orgAdminService = {
         return api.get<any>(`/api/org-admin/users?organisation_id=${organisationId}`);
     },
 
+    async getStaffCapacity(organisationId: number) {
+        return api.get<any>(`/api/org-admin/staff-capacity?organisation_id=${organisationId}`);
+    },
+
     async updateAdminProfile(data: { user_id: number; username?: string; email?: string }) {
         return api.put<any>('/api/org-admin/profile', data);
     },
