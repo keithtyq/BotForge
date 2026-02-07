@@ -50,6 +50,17 @@ class ChatbotService:
 
         industry = (company or {}).get("industry", "default")
 
+        # Intent refinement: for restaurants with a defined price range, answer pricing questions with the
+        # more specific "price_range" template so users get the configured value.
+        if industry == "restaurant" and intent == "pricing" and (company or {}).get("price_range"):
+            intent = "price_range"
+
+        # Avoid rendering templates with missing placeholders.
+        if intent == "price_range" and not (company or {}).get("price_range"):
+            intent = "pricing"
+        if intent == "seating_capacity" and not (company or {}).get("seating_capacity"):
+            intent = "contact_support"
+
         detected_language, lang_conf = self._detect_language(message)
 
         # Use detected language if confidence is high
