@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { GripVertical } from 'lucide-react';
 import { orgAdminService, operatorService } from '../../api';
 
 interface CustomizeChatbotProps {
@@ -26,6 +27,8 @@ export const CustomizeChatbot: React.FC<CustomizeChatbotProps> = ({ onBack, orga
   const [quickReplyOptions, setQuickReplyOptions] = useState<QuickReplyOption[]>([]);
   const [quickReplySelected, setQuickReplySelected] = useState<string[]>([]);
   const [quickReplySuggested, setQuickReplySuggested] = useState<string[]>([]);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [insertIdx, setInsertIdx] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -102,6 +105,50 @@ export const CustomizeChatbot: React.FC<CustomizeChatbotProps> = ({ onBack, orga
       if (prev.includes(text)) return prev.filter((t) => t !== text);
       return [...prev, text];
     });
+  };
+
+  const reorderQuickReplies = (from: number, insertAt: number) => {
+    setQuickReplySelected((prev) => {
+      if (from < 0 || from >= prev.length) return prev;
+      if (insertAt < 0 || insertAt > prev.length) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      let idx = insertAt;
+      if (idx > from) idx -= 1; // account for removal shift
+      idx = Math.max(0, Math.min(idx, next.length));
+      next.splice(idx, 0, moved);
+      return next;
+    });
+  };
+
+  const QuickReplyInsertZone: React.FC<{ index: number }> = ({ index }) => {
+    const active = insertIdx === index;
+    return (
+      <div
+        onDragOver={(e) => {
+          if (dragIdx === null) return;
+          e.preventDefault();
+          if (insertIdx !== index) setInsertIdx(index);
+        }}
+        onDrop={(e) => {
+          if (dragIdx === null) return;
+          e.preventDefault();
+          reorderQuickReplies(dragIdx, index);
+          setDragIdx(null);
+          setInsertIdx(null);
+        }}
+        className={`relative transition-[height] ${active ? 'h-6' : 'h-3'}`}
+        aria-hidden="true"
+      >
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 px-1">
+          <div
+            className={`h-0.5 rounded-full transition-colors ${
+              active ? 'bg-blue-600' : 'bg-transparent'
+            }`}
+          />
+        </div>
+      </div>
+    );
   };
 
   const handleSave = async () => {
@@ -251,35 +298,47 @@ export const CustomizeChatbot: React.FC<CustomizeChatbotProps> = ({ onBack, orga
             {quickReplySelected.length > 0 && (
               <div className="mb-4">
                 <div className="text-xs font-bold text-gray-700 mb-2">Selected (order)</div>
-                <div className="space-y-2">
+                <p className="text-[11px] text-gray-500 mb-2">Drag to reorder.</p>
+                <div>
+                  <QuickReplyInsertZone index={0} />
                   {quickReplySelected.map((t, idx) => (
-                    <div key={t} className="flex items-center justify-between border border-gray-200 rounded px-3 py-2 bg-white">
-                      <div className="text-sm text-gray-800 font-medium">{t}</div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => moveQuickReply(idx, -1)}
-                          disabled={idx === 0}
-                          className="text-xs font-bold px-2 py-1 border rounded disabled:opacity-40"
-                        >
-                          Up
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moveQuickReply(idx, 1)}
-                          disabled={idx === quickReplySelected.length - 1}
-                          className="text-xs font-bold px-2 py-1 border rounded disabled:opacity-40"
-                        >
-                          Down
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => toggleQuickReply(t)}
-                          className="text-xs font-bold px-2 py-1 border rounded text-red-600 border-red-200 hover:bg-red-50"
-                        >
-                          Remove
-                        </button>
+                    <div key={t}>
+                      <div
+                        draggable
+                        onDragStart={(e) => {
+                          setDragIdx(idx);
+                          setInsertIdx(idx);
+                          e.dataTransfer.effectAllowed = 'move';
+                          try {
+                            e.dataTransfer.setData('text/plain', t);
+                          } catch {
+                            // ignore
+                          }
+                        }}
+                        onDragEnd={() => {
+                          setDragIdx(null);
+                          setInsertIdx(null);
+                        }}
+                        className={`flex items-center justify-between border border-gray-200 rounded px-3 py-2 bg-white ${
+                          dragIdx === idx ? 'opacity-60' : ''
+                        }`}
+                        title="Drag to reorder"
+                      >
+                        <div className="text-sm text-gray-800 font-medium">{t}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-gray-400 cursor-grab active:cursor-grabbing select-none" aria-hidden="true">
+                            <GripVertical size={16} />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => toggleQuickReply(t)}
+                            className="text-xs font-bold px-2 py-1 border rounded text-red-600 border-red-200 hover:bg-red-50"
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </div>
+                      <QuickReplyInsertZone index={idx + 1} />
                     </div>
                   ))}
                 </div>

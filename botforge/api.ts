@@ -453,6 +453,15 @@ export const notificationService = {
 };
 
 export const chatService = {
+    async getMessages(companyId: number, sessionId: string, limit: number = 100) {
+        const params = new URLSearchParams({
+            company_id: String(companyId),
+            session_id: sessionId,
+            limit: String(limit),
+        });
+        return api.get<any>(`/api/chat/messages?${params.toString()}`);
+    },
+
     async welcome(companyId: number, sessionId?: string) {
         const params = new URLSearchParams({ company_id: String(companyId) });
         if (sessionId) {
