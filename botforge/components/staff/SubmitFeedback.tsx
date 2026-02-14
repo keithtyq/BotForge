@@ -17,22 +17,34 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
+    const purposeOptions = [
+        { value: '', label: 'Select purpose' },
+        { value: 'bug_report', label: 'Bug Report' },
+        { value: 'feature_request', label: 'Feature Request' },
+        { value: 'ui_ux_feedback', label: 'UI/UX Feedback' },
+        { value: 'performance_issue', label: 'Performance Issue' },
+        { value: 'general_feedback', label: 'General Feedback' },
+        { value: 'other', label: 'Other' },
+    ];
+
     const handleSubmit = async () => {
         setError(null);
 
-        // Validation
-        if (!purpose.trim()) {
-            setError('Please enter a feedback purpose.');
+        if (!purpose) {
+            setError('Please select a feedback purpose.');
             return;
         }
+
         if (!content.trim()) {
             setError('Please write your comments.');
             return;
         }
+
         if (rating === 0) {
             setError('Please rate your experience.');
             return;
         }
+
         if (!user) {
             setError('You must be logged in to submit feedback.');
             return;
@@ -50,7 +62,6 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
 
             if (res.ok) {
                 setSuccess(true);
-                // Optional: Reset form or auto-back
                 setPurpose('');
                 setContent('');
                 setRating(0);
@@ -116,19 +127,25 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
                 </div>
             )}
 
+            {/* Purpose Dropdown */}
             <div className="border border-gray-300 rounded-xl p-6 mb-6 bg-white overflow-hidden shadow-sm">
                 <label className="block text-sm font-bold text-gray-700 mb-3">
                     Feedback Purpose
                 </label>
-                <input
-                    type="text"
+                <select
                     value={purpose}
                     onChange={(e) => setPurpose(e.target.value)}
-                    placeholder="e.g. Bug Report, Feature Request"
-                    className="w-full border border-gray-300 rounded-lg py-2 px-4 text-gray-800 text-sm bg-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400"
-                />
+                    className="w-full border border-gray-300 rounded-lg py-2 px-4 text-gray-800 text-sm bg-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                >
+                    {purposeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                            {option.label}
+                        </option>
+                    ))}
+                </select>
             </div>
 
+            {/* Comments */}
             <div className="border border-gray-300 rounded-xl p-6 mb-8 bg-white overflow-hidden shadow-sm">
                 <label className="block text-sm font-bold text-gray-700 mb-3">
                     Comments
@@ -141,6 +158,7 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
                 />
             </div>
 
+            {/* Rating */}
             <div className="text-center mb-10">
                 <p className="text-sm font-bold text-gray-700 mb-4">
                     Rate your experience
@@ -168,6 +186,7 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
                 </div>
             </div>
 
+            {/* Submit */}
             <div className="flex justify-center">
                 <button
                     onClick={handleSubmit}
@@ -181,3 +200,5 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
         </div>
     );
 };
+
+export default SubmitFeedback;
