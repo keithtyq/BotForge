@@ -17,22 +17,34 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
+    const purposeOptions = [
+        { value: '', label: 'Select purpose' },
+        { value: 'bug_report', label: 'Bug Report' },
+        { value: 'feature_request', label: 'Feature Request' },
+        { value: 'ui_ux_feedback', label: 'UI/UX Feedback' },
+        { value: 'performance_issue', label: 'Performance Issue' },
+        { value: 'general_feedback', label: 'General Feedback' },
+        { value: 'other', label: 'Other' },
+    ];
+
     const handleSubmit = async () => {
         setError(null);
 
-        // Validation
-        if (!purpose.trim()) {
-            setError("Please enter a feedback purpose.");
+        if (!purpose) {
+            setError("Please select a feedback purpose.");
             return;
         }
+
         if (!content.trim()) {
             setError("Please write your comments.");
             return;
         }
+
         if (rating === 0) {
             setError("Please rate your experience.");
             return;
         }
+
         if (!user) {
             setError("You must be logged in to submit feedback.");
             return;
@@ -50,7 +62,6 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
 
             if (res.ok) {
                 setSuccess(true);
-                // Optional: Reset form or auto-back
                 setPurpose('');
                 setContent('');
                 setRating(0);
@@ -70,7 +81,10 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
                 <CheckCircle className="w-16 h-16 text-green-500 mb-6" />
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Feedback Submitted!</h2>
                 <p className="text-gray-600 mb-8">Thank you for your feedback. We appreciate your input.</p>
-                <button onClick={() => { setSuccess(false); onBack(); }} className="bg-gray-800 text-white font-bold py-2 px-8 rounded-lg text-sm hover:bg-gray-700 transition-colors">
+                <button
+                    onClick={() => { setSuccess(false); onBack(); }}
+                    className="bg-gray-800 text-white font-bold py-2 px-8 rounded-lg text-sm hover:bg-gray-700 transition-colors"
+                >
                     Back to Dashboard
                 </button>
             </div>
@@ -79,7 +93,10 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
 
     return (
         <div className="animate-in fade-in duration-500">
-            <button onClick={onBack} className="text-gray-500 hover:text-gray-900 text-sm flex items-center mb-6 font-medium transition-colors">
+            <button
+                onClick={onBack}
+                className="text-gray-500 hover:text-gray-900 text-sm flex items-center mb-6 font-medium transition-colors"
+            >
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
             </button>
 
@@ -92,17 +109,23 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
                 </div>
             )}
 
+            {/* Purpose Dropdown */}
             <div className="bg-white border border-gray-300 rounded-xl p-6 mb-6 shadow-sm max-w-2xl mx-auto">
                 <label className="block text-sm font-bold text-gray-700 mb-3">Feedback Purpose</label>
-                <input
-                    type="text"
+                <select
                     value={purpose}
                     onChange={(e) => setPurpose(e.target.value)}
-                    placeholder="e.g. Bug Report, Feature Request"
-                    className="w-full border border-gray-300 rounded-lg py-2 px-4 text-gray-800 text-sm bg-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400"
-                />
+                    className="w-full border border-gray-300 rounded-lg py-2 px-4 text-gray-800 text-sm bg-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                >
+                    {purposeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                            {option.label}
+                        </option>
+                    ))}
+                </select>
             </div>
 
+            {/* Comments */}
             <div className="bg-white border border-gray-300 rounded-xl p-6 mb-8 shadow-sm max-w-2xl mx-auto">
                 <label className="block text-sm font-bold text-gray-700 mb-3">Comments</label>
                 <textarea
@@ -113,6 +136,7 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
                 ></textarea>
             </div>
 
+            {/* Rating */}
             <div className="text-center mb-10">
                 <p className="text-sm font-bold text-gray-700 mb-4">Rate your experience</p>
                 <div className="flex justify-center gap-4">
@@ -120,14 +144,25 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
                         <button
                             key={star}
                             onClick={() => setRating(star)}
-                            className={`p-2 rounded-full border transition-all ${rating >= star ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300 bg-white hover:border-gray-400'}`}
+                            className={`p-2 rounded-full border transition-all ${
+                                rating >= star
+                                    ? 'border-yellow-400 bg-yellow-50'
+                                    : 'border-gray-300 bg-white hover:border-gray-400'
+                            }`}
                         >
-                            <Star className={`w-6 h-6 ${rating >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                            <Star
+                                className={`w-6 h-6 ${
+                                    rating >= star
+                                        ? 'text-yellow-400 fill-yellow-400'
+                                        : 'text-gray-300'
+                                }`}
+                            />
                         </button>
                     ))}
                 </div>
             </div>
 
+            {/* Submit */}
             <div className="flex justify-center">
                 <button
                     onClick={handleSubmit}
@@ -141,3 +176,5 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
         </div>
     );
 };
+
+export default SubmitFeedback;
